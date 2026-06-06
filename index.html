@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1.0.2">
+    <link rel="stylesheet" href="styles.css?v=1.0.5">
 </head>
 <body>
     <div id="dropOverlay" class="drop-overlay">
@@ -38,12 +38,18 @@
                 </div>
 
                 <div class="input-group">
-                    <label for="bgInput">3. Background Image</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="bgInput">3. Background Image</label>
+                        <button id="removeBgBtn" class="btn text-danger small" style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
+                    </div>
                     <input type="file" id="bgInput" accept="image/*">
                 </div>
 
                 <div class="input-group">
-                    <label for="albumInput">4. Album Cover</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="albumInput">4. Album Cover</label>
+                        <button id="removeAlbumBtn" class="btn text-danger small" style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
+                    </div>
                     <div class="input-row">
                         <input type="file" id="albumInput" accept="image/*">
                         <input type="text" id="albumUrl" placeholder="Or paste image URL...">
@@ -58,6 +64,7 @@
                             <option value="gradient">Gradient Pulse</option>
                             <option value="reactive">Lyric Reactive</option>
                             <option value="albumBlur">Blurred Album Cover</option>
+                            <option value="materialYou">✨ Album Cover Colors Gradient</option>
                         </select>
                     </div>
                     <div class="input-group">
@@ -74,16 +81,19 @@
                         <input type="color" id="lyricColor" value="#ffffff">
                     </div>
                     <div class="input-group">
-                        <label for="glowColor">Glow Color</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label for="glowColor">Glow Color</label>
+                            <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem; cursor: pointer; user-select: none; color: var(--text-muted);">
+                                <input type="checkbox" id="dynamicGlow" style="cursor: pointer; width: auto; height: auto; margin: 0;"> Match Album
+                            </label>
+                        </div>
                         <input type="color" id="glowColor" value="#6366f1">
                     </div>
                 </div>
 
-                <div class="customization-grid">
-                    <div class="input-group">
-                        <label for="creditsName">Credits Name</label>
-                        <input type="text" id="creditsName" placeholder="e.g. DJ Awesome">
-                    </div>
+                <div class="input-group">
+                    <label for="creditsName">Credits Name</label>
+                    <input type="text" id="creditsName" placeholder="e.g. DJ Awesome">
                 </div>
 
                 <div class="input-group">
@@ -144,6 +154,6 @@
         </footer>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=1.0.5"></script>
 </body>
 </html>

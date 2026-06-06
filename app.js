@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadAlbumUrlBtn = document.getElementById('loadAlbumUrl');
     const bgStyleSelect = document.getElementById('bgStyleSelect');
     const creditsNameInput = document.getElementById('creditsName');
+    const dynamicGlowCheckbox = document.getElementById('dynamicGlow');
+    const removeBgBtn = document.getElementById('removeBgBtn');
+    const removeAlbumBtn = document.getElementById('removeAlbumBtn');
 
     let audioContext = null;
     let audioBuffer = null;
@@ -39,6 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentGlowColor = '#6366f1';
     let currentBgStyle = 'gradient';
 
+    // Material You palette extracted from album cover
+    let albumPalette = null; // Array of {r,g,b} objects
+
     let mediaRecorder = null;
     let recordedChunks = [];
     let destination = null;
@@ -47,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillStyle = '#0f111a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Reset inputs on load to prevent browser cache "ghost" filenames
     function resetInputs() {
         audioInput.value = '';
         lrcInput.value = '';
@@ -55,7 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
         albumInput.value = '';
         lrcEditor.value = '';
         creditsNameInput.value = '';
-        // albumUrl is left alone as per user request
+        removeBgBtn.style.display = 'none';
+        removeAlbumBtn.style.display = 'none';
     }
     resetInputs();
 
@@ -112,11 +118,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (lyrics.length > 0) {
+            if (lyrics[0].time > 0) {
+                lyrics.unshift({ time: 0, text: '• • •' });
+            }
             statusMessage.textContent = `Loaded ${lyrics.length} lyric lines.`;
         } else {
             statusMessage.textContent = 'Enter or upload lyrics to begin.';
         }
         updateButtons();
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     }
 
     // Background processing function
@@ -126,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
         img.onload = () => {
             bgImage = img;
             statusMessage.textContent = 'Background image loaded.';
+            removeBgBtn.style.display = 'block';
             drawFrame(0); // initial draw
         };
         img.src = url;
@@ -143,7 +154,9 @@ document.addEventListener('DOMContentLoaded', () => {
         img.crossOrigin = "anonymous"; // Try to avoid tainting the canvas
         img.onload = () => {
             albumImage = img;
+            albumPalette = extractAlbumPalette(img);
             statusMessage.textContent = 'Album cover loaded.';
+            removeAlbumBtn.style.display = 'block';
             drawFrame(0); // initial draw
         };
         img.onerror = () => {
@@ -151,6 +164,77 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('CORS or Load Error for:', url);
         };
         img.src = url;
+    }
+
+    /**
+     * Extracts a Material You style palette from an image.
+     * Samples pixels, clusters them by hue, and returns the most
+     * vibrant/dominant colors.
+     */
+    function extractAlbumPalette(img) {
+        const offscreen = document.createElement('canvas');
+        const size = 64; // sample at low resolution for speed
+        offscreen.width = size;
+        offscreen.height = size;
+        const offCtx = offscreen.getContext('2d');
+        offCtx.drawImage(img, 0, 0, size, size);
+
+        let imageData;
+        try {
+            imageData = offCtx.getImageData(0, 0, size, size).data;
+        } catch (e) {
+            // CORS-tainted canvas — can't read pixel data
+            console.warn('Could not extract palette (CORS):', e);
+            return null;
+        }
+
+        // Bucket pixels by hue ranges to find dominant hues
+        const buckets = Array.from({ length: 12 }, () => ({ r: 0, g: 0, b: 0, count: 0, satSum: 0 }));
+
+        for (let i = 0; i < imageData.length; i += 4) {
+            const r = imageData[i] / 255;
+            const g = imageData[i + 1] / 255;
+            const b = imageData[i + 2] / 255;
+
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            const delta = max - min;
+            const lightness = (max + min) / 2;
+
+            // Skip near-black, near-white, and near-grey pixels
+            if (delta < 0.15 || lightness < 0.1 || lightness > 0.92) continue;
+
+            let hue = 0;
+            if (delta > 0) {
+                if (max === r) hue = ((g - b) / delta) % 6;
+                else if (max === g) hue = (b - r) / delta + 2;
+                else hue = (r - g) / delta + 4;
+                hue = (hue * 60 + 360) % 360;
+            }
+
+            const saturation = delta / (1 - Math.abs(2 * lightness - 1));
+            const bucketIndex = Math.floor(hue / 30) % 12;
+            const bucket = buckets[bucketIndex];
+            bucket.r += imageData[i];
+            bucket.g += imageData[i + 1];
+            bucket.b += imageData[i + 2];
+            bucket.count++;
+            bucket.satSum += saturation;
+        }
+
+        // Sort by (count * average saturation) to pick vivid dominant colors
+        const sorted = buckets
+            .filter(b => b.count > 0)
+            .map(b => ({
+                r: Math.round(b.r / b.count),
+                g: Math.round(b.g / b.count),
+                b: Math.round(b.b / b.count),
+                score: b.count * (b.satSum / b.count)
+            }))
+            .sort((a, b) => b.score - a.score);
+
+        // Return top 4 colors for the palette
+        return sorted.slice(0, 4).map(c => ({ r: c.r, g: c.g, b: c.b }));
     }
 
     // Input event listeners
@@ -192,12 +276,35 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
+    dynamicGlowCheckbox.addEventListener('change', (e) => {
+        glowColorInput.disabled = e.target.checked;
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
     bgStyleSelect.addEventListener('change', (e) => {
         currentBgStyle = e.target.value;
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
     creditsNameInput.addEventListener('input', () => {
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
+    removeBgBtn.addEventListener('click', () => {
+        bgImage = null;
+        bgInput.value = '';
+        removeBgBtn.style.display = 'none';
+        statusMessage.textContent = 'Background image removed.';
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
+    removeAlbumBtn.addEventListener('click', () => {
+        albumImage = null;
+        albumPalette = null;
+        albumInput.value = '';
+        albumUrlInput.value = '';
+        removeAlbumBtn.style.display = 'none';
+        statusMessage.textContent = 'Album cover removed.';
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
@@ -368,6 +475,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const indexDiff = currentIndex - smoothedIndex;
         smoothedIndex += indexDiff * 0.04;
 
+        // Calculate active glow color (either custom or dynamic based on album palette)
+        let activeGlowColor = currentGlowColor;
+        if (dynamicGlowCheckbox && dynamicGlowCheckbox.checked && albumPalette && albumPalette.length > 0) {
+            const p = albumPalette;
+            const t = smoothedIndex * 0.5;
+            const c0 = p[Math.floor(t) % p.length];
+            const c1 = p[(Math.floor(t) + 1) % p.length];
+            const blend = t % 1;
+            const mix = (a, b, f) => Math.round(a + (b - a) * f);
+            const r = mix(c0.r, c1.r, blend);
+            const g = mix(c0.g, c1.g, blend);
+            const b = mix(c0.b, c1.b, blend);
+            activeGlowColor = `rgb(${r}, ${g}, ${b})`;
+        }
+
         // Clear background
         if (bgImage) {
             // Draw background covering the canvas
@@ -387,6 +509,51 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.filter = 'blur(60px) brightness(0.4)';
             ctx.drawImage(albumImage, x - 100, y - 100, (albumImage.width * scale) + 200, (albumImage.height * scale) + 200);
             ctx.restore();
+        } else if (currentBgStyle === 'materialYou' && albumPalette && albumPalette.length >= 2) {
+            // --- Material You: Album color reactive background ---
+            // Animate between palette colors based on lyric progress using smooth sine waves
+            const p = albumPalette;
+            const t = smoothedIndex * 0.5; // slow oscillation
+            const pulse = (Math.sin(currentTime * 1.2) * 0.5 + 0.5); // 0..1 breathing pulse
+
+            // Pick two colors to blend between, cycling through the palette
+            const c0 = p[Math.floor(t) % p.length];
+            const c1 = p[(Math.floor(t) + 1) % p.length];
+            const c2 = p[(Math.floor(t) + 2) % p.length];
+            const blend = t % 1;
+
+            // Mix c0 -> c1 for gradient start, c1 -> c2 for end
+            const mix = (a, b, f) => Math.round(a + (b - a) * f);
+            const col0 = { r: mix(c0.r, c1.r, blend), g: mix(c0.g, c1.g, blend), b: mix(c0.b, c1.b, blend) };
+            const col1 = { r: mix(c1.r, c2.r, blend), g: mix(c1.g, c2.g, blend), b: mix(c1.b, c2.b, blend) };
+
+            // Tone down to dark Material You surface colors (keep hue, reduce lightness)
+            const darken = (c, f) => `rgb(${Math.round(c.r * f)}, ${Math.round(c.g * f)}, ${Math.round(c.b * f)})`;
+
+            // Radial gradient base – gives the "tonal surface" Material You feel
+            const radGrad = ctx.createRadialGradient(
+                canvas.width * 0.3, canvas.height * 0.5, 0,
+                canvas.width * 0.5, canvas.height * 0.5, canvas.width * 0.8
+            );
+            radGrad.addColorStop(0, darken(col0, 0.25 + pulse * 0.08));
+            radGrad.addColorStop(0.5, darken(col1, 0.12));
+            radGrad.addColorStop(1, darken(c2, 0.06));
+            ctx.fillStyle = radGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Accent orbs — soft blurred color blobs like Material You wallpaper
+            const orbs = [
+                { x: canvas.width * 0.15, y: canvas.height * 0.3, r: 500, c: col0, a: 0.18 + pulse * 0.06 },
+                { x: canvas.width * 0.75, y: canvas.height * 0.6, r: 600, c: col1, a: 0.14 + (1 - pulse) * 0.06 },
+                { x: canvas.width * 0.5,  y: canvas.height * 0.1, r: 350, c: c2,   a: 0.10 + pulse * 0.04 },
+            ];
+            for (const orb of orbs) {
+                const orbGrad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
+                orbGrad.addColorStop(0, `rgba(${orb.c.r}, ${orb.c.g}, ${orb.c.b}, ${orb.a})`);
+                orbGrad.addColorStop(1, `rgba(${orb.c.r}, ${orb.c.g}, ${orb.c.b}, 0)`);
+                ctx.fillStyle = orbGrad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
         } else {
             // Default dynamic gradient background
             const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -550,7 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 context.clip();
                                 
                                 context.fillStyle = currentLyricColor;
-                                context.shadowColor = currentGlowColor;
+                                context.shadowColor = activeGlowColor;
                                 context.shadowBlur = 20 * opacity;
                                 context.fillText(item.renderText, currentX, lineY);
                                 context.restore();
@@ -594,7 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     fontSize = 70;
                     ctx.font = `bold ${fontSize}px ${currentFont}`;
                     ctx.fillStyle = currentLyricColor;
-                    ctx.shadowColor = currentGlowColor;
+                    ctx.shadowColor = activeGlowColor;
                     ctx.shadowBlur = 20 * opacity;
                 } else {
                     fontSize = 50;

@@ -286,7 +286,7 @@ canvas {
     align-items: stretch;
 }
 
-.input-row input[type="text"] {
+input[type="text"], #creditsName {
     width: 100%;
     background: rgba(0, 0, 0, 0.2);
     padding: 0.8rem;
@@ -294,6 +294,13 @@ canvas {
     border: 1px solid var(--glass-border);
     color: var(--text-main);
     font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(0, 0, 0, 0.3);
 }
 
 .btn.small {
@@ -321,6 +328,7 @@ canvas {
 }
 
 select {
+    width: 100%;
     background: rgba(0, 0, 0, 0.2);
     padding: 0.8rem;
     border-radius: 12px;
