@@ -384,6 +384,23 @@ select option {
     padding: 0.5rem;
 }
 
+#fontSelect option[value="Outfit"] { font-family: 'Outfit', sans-serif; }
+#fontSelect option[value="Inter"] { font-family: 'Inter', sans-serif; }
+#fontSelect option[value="Roboto"] { font-family: 'Roboto', sans-serif; }
+#fontSelect option[value="Playfair Display"] { font-family: 'Playfair Display', serif; }
+#fontSelect option[value="Lexend"] { font-family: 'Lexend', sans-serif; }
+#fontSelect option[value="OpenDyslexic"] { font-family: 'OpenDyslexic', sans-serif; }
+#fontSelect option[value="Bebas Neue"] { font-family: 'Bebas Neue', sans-serif; }
+#fontSelect option[value="Montserrat"] { font-family: 'Montserrat', sans-serif; }
+#fontSelect option[value="Lora"] { font-family: 'Lora', serif; }
+#fontSelect option[value="Cinzel"] { font-family: 'Cinzel', serif; }
+#fontSelect option[value="Permanent Marker"] { font-family: 'Permanent Marker', cursive; }
+#fontSelect option[value="Pacifico"] { font-family: 'Pacifico', cursive; }
+#fontSelect option[value="Comic Neue"] { font-family: 'Comic Neue', cursive; }
+#fontSelect option[value="Comic Sans MS"] { font-family: 'Comic Sans MS', 'Comic Neue', cursive; }
+#fontSelect option[value="Impact"] { font-family: Impact, Charcoal, sans-serif; }
+#fontSelect option[value="Courier New"] { font-family: 'Courier New', Courier, monospace; }
+
 input[type="color"] {
     appearance: none;
     -webkit-appearance: none;

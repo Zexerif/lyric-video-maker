@@ -10,8 +10,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&family=Lexend:wght@400;600;800&family=Bebas+Neue&family=Montserrat:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@700&family=Permanent+Marker&family=Pacifico&family=Comic+Neue:wght@400;700&display=swap"
         rel="stylesheet">
-    <link href="https://fonts.cdnfonts.com/css/open-dyslexic" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1.0.21">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/index.css">
+    <link rel="stylesheet" href="styles.css?v=1.0.23">
 </head>
 
 <body>
@@ -115,21 +115,21 @@
                             <label for="fontSelect">Font</label>
                             <select id="fontSelect">
                                 <option value="Outfit">Outfit</option>
-                                <option value="'Inter', sans-serif">Inter</option>
-                                <option value="'Roboto', sans-serif">Roboto</option>
-                                <option value="'Playfair Display', serif">Playfair Display</option>
-                                <option value="'Lexend', sans-serif">Lexend</option>
-                                <option value="'Open-Dyslexic', sans-serif">OpenDyslexic</option>
-                                <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
-                                <option value="'Montserrat', sans-serif">Montserrat</option>
-                                <option value="'Lora', serif">Lora</option>
-                                <option value="'Cinzel', serif">Cinzel</option>
-                                <option value="'Permanent Marker', cursive">Permanent Marker</option>
-                                <option value="'Pacifico', cursive">Pacifico</option>
-                                <option value="'Comic Neue', cursive">Comic Neue</option>
-                                <option value="'Comic Sans MS', 'Comic Neue', cursive">Comic Sans MS</option>
-                                <option value="Impact, Charcoal, sans-serif">Impact</option>
-                                <option value="'Courier New', Courier, monospace">Courier New</option>
+                                <option value="Inter">Inter</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Playfair Display">Playfair Display</option>
+                                <option value="Lexend">Lexend</option>
+                                <option value="OpenDyslexic">OpenDyslexic</option>
+                                <option value="Bebas Neue">Bebas Neue</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Lora">Lora</option>
+                                <option value="Cinzel">Cinzel</option>
+                                <option value="Permanent Marker">Permanent Marker</option>
+                                <option value="Pacifico">Pacifico</option>
+                                <option value="Comic Neue">Comic Neue</option>
+                                <option value="Comic Sans MS">Comic Sans MS</option>
+                                <option value="Impact">Impact</option>
+                                <option value="Courier New">Courier New</option>
                             </select>
                         </div>
                         <div class="input-group">
@@ -326,7 +326,24 @@
         </div>
     </div>
 
-    <script src="app.js?v=1.0.21"></script>
+    <!-- Hidden container to preload all web fonts so they display instantly in dropdown and canvas -->
+    <div style="position: absolute; visibility: hidden; width: 0; height: 0; overflow: hidden; pointer-events: none;">
+        <span style="font-family: 'Outfit';">a</span>
+        <span style="font-family: 'Inter';">a</span>
+        <span style="font-family: 'Roboto';">a</span>
+        <span style="font-family: 'Playfair Display';">a</span>
+        <span style="font-family: 'Lexend';">a</span>
+        <span style="font-family: 'OpenDyslexic';">a</span>
+        <span style="font-family: 'Bebas Neue';">a</span>
+        <span style="font-family: 'Montserrat';">a</span>
+        <span style="font-family: 'Lora';">a</span>
+        <span style="font-family: 'Cinzel';">a</span>
+        <span style="font-family: 'Permanent Marker';">a</span>
+        <span style="font-family: 'Pacifico';">a</span>
+        <span style="font-family: 'Comic Neue';">a</span>
+    </div>
+
+    <script src="app.js?v=1.0.23"></script>
 </body>
 
 </html>

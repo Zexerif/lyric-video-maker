@@ -361,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fontSelect.addEventListener('change', (e) => {
         currentFont = e.target.value;
+        fontSelect.style.fontFamily = `"${currentFont}", sans-serif`;
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
@@ -737,14 +738,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (songTitle) {
-                ctx.font = `800 42px ${currentFont}`;
+                ctx.font = `800 42px "${currentFont}", sans-serif`;
                 ctx.fillStyle = '#ffffff';
                 ctx.fillText(songTitle, 200, textY, 600);
                 textY += 55;
             }
 
             if (songArtist) {
-                ctx.font = `600 28px ${currentFont}`;
+                ctx.font = `600 28px "${currentFont}", sans-serif`;
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
                 ctx.fillText(songArtist, 200, textY, 600);
             }
@@ -756,7 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.save();
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
-        ctx.font = `600 24px ${currentFont}`;
+        ctx.font = `600 24px "${currentFont}", sans-serif`;
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
@@ -768,7 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.save();
             ctx.textAlign = 'left';
             ctx.textBaseline = 'bottom';
-            ctx.font = `600 30px ${currentFont}`;
+            ctx.font = `600 30px "${currentFont}", sans-serif`;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.shadowColor = 'rgba(0,0,0,0.8)';
             ctx.shadowBlur = 10;
@@ -918,13 +919,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 let fontSize;
                 if (i === currentIndex) {
                     fontSize = 70;
-                    ctx.font = `bold ${fontSize}px ${currentFont}`;
+                    ctx.font = `bold ${fontSize}px "${currentFont}", sans-serif`;
                     ctx.fillStyle = currentLyricColor;
                     ctx.shadowColor = activeGlowColor;
                     ctx.shadowBlur = 20 * opacity;
                 } else {
                     fontSize = 50;
-                    ctx.font = `600 ${fontSize}px ${currentFont}`;
+                    ctx.font = `600 ${fontSize}px "${currentFont}", sans-serif`;
                     ctx.fillStyle = `rgba(203, 213, 225, ${opacity * 0.5})`;
                     ctx.shadowBlur = 0;
                 }
