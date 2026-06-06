@@ -483,3 +483,36 @@ footer {
     margin: 0 auto;
     line-height: 1.6;
 }
+
+.ai-disclaimer {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    opacity: 0.6;
+    margin-top: 0.5rem;
+}
+
+.github-link {
+    margin-top: 1rem;
+}
+
+.github-link a {
+    color: var(--text-main);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+    border: 1px solid var(--glass-border);
+    padding: 0.5rem 1.2rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    display: inline-block;
+}
+
+.github-link a:hover {
+    opacity: 1;
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+}
