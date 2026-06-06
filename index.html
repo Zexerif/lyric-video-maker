@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LRC Music Video Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="dropOverlay" class="drop-overlay">
+        <div class="drop-message">
+            <h2>Drop files here</h2>
+            <p>Audio (.mp3/.wav), Lyrics (.lrc), or Background Image</p>
+        </div>
+    </div>
+    
+    <div class="background-anim"></div>
+    
+    <div class="app-container">
+        <header>
+            <h1>LRC Video Creator</h1>
+            <p>Turn your audio and lyrics into a stunning visual experience.</p>
+        </header>
+
+        <main>
+            <div class="controls-panel glass-panel">
+                <div class="input-group">
+                    <label for="audioInput">1. Upload Audio (MP3/WAV)</label>
+                    <input type="file" id="audioInput" accept="audio/*">
+                </div>
+                
+                <div class="input-group">
+                    <label for="lrcInput">2. Upload Lyrics (.lrc/.ttml)</label>
+                    <input type="file" id="lrcInput" accept=".lrc,.ttml,.xml,text/plain,application/xml,text/xml">
+                </div>
+
+                <div class="input-group">
+                    <label for="bgInput">3. Background Image</label>
+                    <input type="file" id="bgInput" accept="image/*">
+                </div>
+
+                <div class="input-group">
+                    <label for="albumInput">4. Album Cover</label>
+                    <div class="input-row">
+                        <input type="file" id="albumInput" accept="image/*">
+                        <input type="text" id="albumUrl" placeholder="Or paste image URL...">
+                        <button id="loadAlbumUrl" class="btn small">Load URL</button>
+                    </div>
+                </div>
+
+                <div class="customization-grid">
+                    <div class="input-group">
+                        <label for="bgStyleSelect">BG Style</label>
+                        <select id="bgStyleSelect">
+                            <option value="gradient">Gradient Pulse</option>
+                            <option value="reactive">Lyric Reactive</option>
+                            <option value="albumBlur">Blurred Album Cover</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="fontSelect">Font</label>
+                        <select id="fontSelect">
+                            <option value="Outfit">Outfit (Default)</option>
+                            <option value="'Inter', sans-serif">Inter</option>
+                            <option value="'Roboto', sans-serif">Roboto</option>
+                            <option value="'Playfair Display', serif">Playfair</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="lyricColor">Text Color</label>
+                        <input type="color" id="lyricColor" value="#ffffff">
+                    </div>
+                    <div class="input-group">
+                        <label for="glowColor">Glow Color</label>
+                        <input type="color" id="glowColor" value="#6366f1">
+                    </div>
+                </div>
+
+                <div class="customization-grid">
+                    <div class="input-group">
+                        <label for="creditsName">Credits Name</label>
+                        <input type="text" id="creditsName" placeholder="e.g. DJ Awesome">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="lrcEditor">Lyric Editor (Live Edit)</label>
+                    <textarea id="lrcEditor" placeholder="Upload an .lrc/.ttml file or type lyrics here..."></textarea>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="playBtn" class="btn primary" disabled>Preview Video</button>
+                    <button id="exportBtn" class="btn secondary" disabled>Generate & Download Video</button>
+                </div>
+
+                <div class="progress-container" id="progressContainer" style="display: none;">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+
+            <div class="preview-panel glass-panel">
+                <div class="canvas-container">
+                    <!-- Default resolution 1920x1080 scaled down via CSS -->
+                    <canvas id="videoCanvas" width="1920" height="1080"></canvas>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
