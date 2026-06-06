@@ -465,3 +465,21 @@ textarea:focus {
     color: var(--secondary);
     border-bottom-color: var(--secondary);
 }
+
+footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1.5rem 0;
+    border-top: 1px dashed var(--glass-border);
+}
+
+.disclaimer {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--secondary);
+    opacity: 0.8;
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
