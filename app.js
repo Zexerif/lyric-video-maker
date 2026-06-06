@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
-        ctx.fillText(`Made with LRC Video Creator`, 40, 40);
+        ctx.fillText(`zexerif.github.io/lyric-video-maker/`, 40, 40);
         ctx.restore();
 
         const creditsName = creditsNameInput.value.trim();
