@@ -1,7 +1,9 @@
 # 🎵 Lyric Video Maker
 
 > Turn your audio and lyrics into a stunning visual experience in seconds—right inside your browser. 🚀
+
 > https://zexerif.github.io/lyric-video-maker/
+
 **Lyric Video Maker** is a premium, client-side web application designed to generate beautiful lyric videos from synchronized lyrics (`.lrc` or word-by-word `.ttml` files) and audio tracks. With customizable visuals, smooth animations, and zero server-side rendering, you can generate stunning music videos instantly.
 
 ---
