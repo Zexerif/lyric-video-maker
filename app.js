@@ -22,6 +22,56 @@ document.addEventListener('DOMContentLoaded', () => {
     const dynamicGlowCheckbox = document.getElementById('dynamicGlow');
     const removeBgBtn = document.getElementById('removeBgBtn');
     const removeAlbumBtn = document.getElementById('removeAlbumBtn');
+    const songTitleInput = document.getElementById('songTitleInput');
+    const songArtistInput = document.getElementById('songArtistInput');
+
+    // Helper to ensure extracted album colors are adjusted properly for text or elements
+    function adjustColorForReadability(r, g, b, minLightness = 0.7, maxLightness = 1.0, minSaturation = 0.5) {
+        let rNorm = r / 255;
+        let gNorm = g / 255;
+        let bNorm = b / 255;
+        
+        let max = Math.max(rNorm, gNorm, bNorm);
+        let min = Math.min(rNorm, gNorm, bNorm);
+        let h, s, l = (max + min) / 2;
+
+        if (max === min) {
+            h = s = 0;
+        } else {
+            let d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case rNorm: h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0); break;
+                case gNorm: h = (bNorm - rNorm) / d + 2; break;
+                case bNorm: h = (rNorm - gNorm) / d + 4; break;
+            }
+            h /= 6;
+        }
+
+        // Clamp lightness to the specified range
+        if (l < minLightness) l = minLightness;
+        if (l > maxLightness) l = maxLightness;
+        // Keep saturation decent so colors remain vibrant
+        if (s < minSaturation) s = minSaturation;
+
+        let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        let p = 2 * l - q;
+        
+        const hue2rgb = (t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        };
+
+        return {
+            r: Math.round(hue2rgb(h + 1/3) * 255),
+            g: Math.round(hue2rgb(h) * 255),
+            b: Math.round(hue2rgb(h - 1/3) * 255)
+        };
+    }
 
     let audioContext = null;
     let audioBuffer = null;
@@ -62,6 +112,16 @@ document.addEventListener('DOMContentLoaded', () => {
         creditsNameInput.value = '';
         removeBgBtn.style.display = 'none';
         removeAlbumBtn.style.display = 'none';
+        songTitleInput.value = '';
+        songArtistInput.value = '';
+        
+        // Reset personalization controls to default state
+        bgStyleSelect.value = 'gradient';
+        fontSelect.value = 'Outfit';
+        lyricColorInput.value = '#ffffff';
+        glowColorInput.value = '#6366f1';
+        dynamicGlowCheckbox.checked = false;
+        glowColorInput.disabled = false;
     }
     resetInputs();
 
@@ -157,6 +217,44 @@ document.addEventListener('DOMContentLoaded', () => {
             albumPalette = extractAlbumPalette(img);
             statusMessage.textContent = 'Album cover loaded.';
             removeAlbumBtn.style.display = 'block';
+            
+            // Set dynamic background CSS variables on the document root
+            if (albumPalette && albumPalette.length >= 2) {
+                const c0Raw = albumPalette[0];
+                const c1Raw = albumPalette[1];
+                
+                // Adjust colors for text/gradients (very bright, min 75% lightness for contrast on dark background)
+                const c0Text = adjustColorForReadability(c0Raw.r, c0Raw.g, c0Raw.b, 0.75, 0.95, 0.6);
+                const c1Text = adjustColorForReadability(c1Raw.r, c1Raw.g, c1Raw.b, 0.75, 0.95, 0.6);
+                
+                // Adjust colors for UI elements/buttons (vibrant, rich, lightness clamped between 25% and 55% for premium depth)
+                const c0Element = adjustColorForReadability(c0Raw.r, c0Raw.g, c0Raw.b, 0.25, 0.55, 0.6);
+                const c1Element = adjustColorForReadability(c1Raw.r, c1Raw.g, c1Raw.b, 0.25, 0.55, 0.6);
+                
+                // Adjust colors for hover states (slightly darker, let's clamp between 0.20 and 0.45)
+                const c0Hover = adjustColorForReadability(c0Raw.r, c0Raw.g, c0Raw.b, 0.20, 0.45, 0.6);
+                const c1Hover = adjustColorForReadability(c1Raw.r, c1Raw.g, c1Raw.b, 0.20, 0.45, 0.6);
+
+                const root = document.documentElement;
+                root.style.setProperty('--glow-c1', `rgba(${c0Element.r}, ${c0Element.g}, ${c0Element.b}, 0.15)`);
+                root.style.setProperty('--glow-c2', `rgba(${c1Element.r}, ${c1Element.g}, ${c1Element.b}, 0.15)`);
+                
+                // Dynamic theme variables matching the album colors
+                root.style.setProperty('--theme-primary', `rgb(${c0Element.r}, ${c0Element.g}, ${c0Element.b})`);
+                root.style.setProperty('--theme-primary-hover', `rgb(${c0Hover.r}, ${c0Hover.g}, ${c0Hover.b})`);
+                root.style.setProperty('--theme-secondary', `rgb(${c1Element.r}, ${c1Element.g}, ${c1Element.b})`);
+                root.style.setProperty('--theme-secondary-hover', `rgb(${c1Hover.r}, ${c1Hover.g}, ${c1Hover.b})`);
+                
+                root.style.setProperty('--theme-primary-shadow', `rgba(${c0Element.r}, ${c0Element.g}, ${c0Element.b}, 0.4)`);
+                root.style.setProperty('--theme-secondary-shadow', `rgba(${c1Element.r}, ${c1Element.g}, ${c1Element.b}, 0.15)`);
+                
+                root.style.setProperty('--theme-gradient-start', `rgb(${c0Text.r}, ${c0Text.g}, ${c0Text.b})`);
+                root.style.setProperty('--theme-gradient-end', `rgb(${c1Text.r}, ${c1Text.g}, ${c1Text.b})`);
+
+                root.style.setProperty('--theme-element-gradient-start', `rgb(${c0Element.r}, ${c0Element.g}, ${c0Element.b})`);
+                root.style.setProperty('--theme-element-gradient-end', `rgb(${c1Element.r}, ${c1Element.g}, ${c1Element.b})`);
+            }
+            
             drawFrame(0); // initial draw
         };
         img.onerror = () => {
@@ -290,6 +388,14 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
+    songTitleInput.addEventListener('input', () => {
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
+    songArtistInput.addEventListener('input', () => {
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
     removeBgBtn.addEventListener('click', () => {
         bgImage = null;
         bgInput.value = '';
@@ -304,6 +410,22 @@ document.addEventListener('DOMContentLoaded', () => {
         albumInput.value = '';
         albumUrlInput.value = '';
         removeAlbumBtn.style.display = 'none';
+        
+        // Reset dynamic background glow variables to defaults
+        const root = document.documentElement;
+        root.style.removeProperty('--glow-c1');
+        root.style.removeProperty('--glow-c2');
+        root.style.removeProperty('--theme-primary');
+        root.style.removeProperty('--theme-primary-hover');
+        root.style.removeProperty('--theme-secondary');
+        root.style.removeProperty('--theme-secondary-hover');
+        root.style.removeProperty('--theme-primary-shadow');
+        root.style.removeProperty('--theme-secondary-shadow');
+        root.style.removeProperty('--theme-gradient-start');
+        root.style.removeProperty('--theme-gradient-end');
+        root.style.removeProperty('--theme-element-gradient-start');
+        root.style.removeProperty('--theme-element-gradient-end');
+        
         statusMessage.textContent = 'Album cover removed.';
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
@@ -487,7 +609,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const r = mix(c0.r, c1.r, blend);
             const g = mix(c0.g, c1.g, blend);
             const b = mix(c0.b, c1.b, blend);
-            activeGlowColor = `rgb(${r}, ${g}, ${b})`;
+            const glowAdjusted = adjustColorForReadability(r, g, b, 0.55); // vibrant glow
+            activeGlowColor = `rgb(${glowAdjusted.r}, ${glowAdjusted.g}, ${glowAdjusted.b})`;
+            
+            // Sync the color picker input preview swatch with the dynamic color
+            const toHex = (c) => c.toString(16).padStart(2, '0');
+            glowColorInput.value = `#${toHex(glowAdjusted.r)}${toHex(glowAdjusted.g)}${toHex(glowAdjusted.b)}`;
         }
 
         // Clear background
@@ -590,6 +717,38 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.roundRect(x, y, size, size, 30);
             ctx.clip();
             ctx.drawImage(albumImage, x, y, size, size);
+            ctx.restore();
+        }
+
+        // Draw Song Title and Artist Name (Left Side)
+        const songTitle = songTitleInput.value.trim();
+        const songArtist = songArtistInput.value.trim();
+
+        if (songTitle || songArtist) {
+            ctx.save();
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 10;
+
+            let textY = 890;
+            if (!albumImage) {
+                textY = canvas.height / 2 - 50;
+            }
+
+            if (songTitle) {
+                ctx.font = `800 42px ${currentFont}`;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(songTitle, 200, textY, 600);
+                textY += 55;
+            }
+
+            if (songArtist) {
+                ctx.font = `600 28px ${currentFont}`;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.fillText(songArtist, 200, textY, 600);
+            }
+
             ctx.restore();
         }
 
@@ -848,11 +1007,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    let countdownInterval = null;
+
     exportBtn.addEventListener('click', () => {
         if (isRecording) return;
 
         // Stop preview if running
         if (isPlaying) stopPlayback();
+
+        const modal = document.getElementById('exportModal');
+        const confirmBtn = document.getElementById('confirmExportBtn');
+        
+        modal.classList.add('active');
+        confirmBtn.disabled = true;
+
+        let timeLeft = 5;
+        confirmBtn.textContent = `Start Export (${timeLeft}s)`;
+
+        if (countdownInterval) clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft > 0) {
+                confirmBtn.textContent = `Start Export (${timeLeft}s)`;
+            } else {
+                clearInterval(countdownInterval);
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Start Export';
+            }
+        }, 1000);
+    });
+
+    document.getElementById('cancelExportBtn').addEventListener('click', () => {
+        const modal = document.getElementById('exportModal');
+        modal.classList.remove('active');
+        if (countdownInterval) clearInterval(countdownInterval);
+    });
+
+    document.getElementById('confirmExportBtn').addEventListener('click', () => {
+        const modal = document.getElementById('exportModal');
+        modal.classList.remove('active');
+        if (countdownInterval) clearInterval(countdownInterval);
 
         statusMessage.textContent = 'Recording video... Please wait until audio finishes.';
         exportBtn.disabled = true;
@@ -961,4 +1155,20 @@ document.addEventListener('DOMContentLoaded', () => {
             playBtn.disabled = false;
         }
     }
+
+    // Tab switcher logic
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.getAttribute('data-tab');
+            
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(target).classList.add('active');
+        });
+    });
 });

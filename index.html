@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lyric Video Maker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1.0.5">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=1.0.18">
 </head>
+
 <body>
     <div id="dropOverlay" class="drop-overlay">
         <div class="drop-message">
@@ -16,9 +20,9 @@
             <p>Audio (.mp3/.wav), Lyrics (.lrc), or Background Image</p>
         </div>
     </div>
-    
+
     <div class="background-anim"></div>
-    
+
     <div class="app-container">
         <header>
             <h1>Lyric Video Maker</h1>
@@ -27,78 +31,118 @@
 
         <main>
             <div class="controls-panel glass-panel">
-                <div class="input-group">
-                    <label for="audioInput">1. Upload Audio (MP3/WAV)</label>
-                    <input type="file" id="audioInput" accept="audio/*">
-                </div>
-                
-                <div class="input-group">
-                    <label for="lrcInput">2. Upload Lyrics (.lrc/.ttml)</label>
-                    <input type="file" id="lrcInput" accept=".lrc,.ttml,.xml,text/plain,application/xml,text/xml">
+                <!-- Tabs Navigation -->
+                <div class="tabs-nav">
+                    <button class="tab-btn active" data-tab="tab-files">🎵 Files</button>
+                    <button class="tab-btn" data-tab="tab-details">📝 Info</button>
+                    <button class="tab-btn" data-tab="tab-style">🎨 Style</button>
+                    <button class="tab-btn" data-tab="tab-editor">✍️ Lyrics</button>
                 </div>
 
-                <div class="input-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <label for="bgInput">3. Background Image</label>
-                        <button id="removeBgBtn" class="btn text-danger small" style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
-                    </div>
-                    <input type="file" id="bgInput" accept="image/*">
-                </div>
-
-                <div class="input-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <label for="albumInput">4. Album Cover</label>
-                        <button id="removeAlbumBtn" class="btn text-danger small" style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
-                    </div>
-                    <div class="input-row">
-                        <input type="file" id="albumInput" accept="image/*">
-                        <input type="text" id="albumUrl" placeholder="Or paste image URL...">
-                        <button id="loadAlbumUrl" class="btn small">Load URL</button>
-                    </div>
-                </div>
-
-                <div class="customization-grid">
-                    <div class="input-group">
-                        <label for="bgStyleSelect">BG Style</label>
-                        <select id="bgStyleSelect">
-                            <option value="gradient">Gradient Pulse</option>
-                            <option value="reactive">Lyric Reactive</option>
-                            <option value="albumBlur">Blurred Album Cover</option>
-                            <option value="materialYou">✨ Album Cover Colors Gradient</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label for="fontSelect">Font</label>
-                        <select id="fontSelect">
-                            <option value="Outfit">Outfit (Default)</option>
-                            <option value="'Inter', sans-serif">Inter</option>
-                            <option value="'Roboto', sans-serif">Roboto</option>
-                            <option value="'Playfair Display', serif">Playfair</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label for="lyricColor">Text Color</label>
-                        <input type="color" id="lyricColor" value="#ffffff">
-                    </div>
-                    <div class="input-group">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <label for="glowColor">Glow Color</label>
-                            <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem; cursor: pointer; user-select: none; color: var(--text-muted);">
-                                <input type="checkbox" id="dynamicGlow" style="cursor: pointer; width: auto; height: auto; margin: 0;"> Match Album
-                            </label>
+                <!-- Tab 1: Files -->
+                <div class="tab-content active" id="tab-files">
+                    <div class="customization-grid">
+                        <div class="input-group">
+                            <label for="audioInput">1. Audio (MP3/WAV)</label>
+                            <input type="file" id="audioInput" accept="audio/*">
                         </div>
-                        <input type="color" id="glowColor" value="#6366f1">
+
+                        <div class="input-group">
+                            <label for="lrcInput">2. Lyrics (.lrc/.ttml)</label>
+                            <input type="file" id="lrcInput" accept=".lrc,.ttml,.xml,text/plain,application/xml,text/xml">
+                        </div>
+                    </div>
+
+                    <div class="customization-grid">
+                        <div class="input-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label for="bgInput">3. BG Image</label>
+                                <button id="removeBgBtn" class="btn text-danger small"
+                                    style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
+                            </div>
+                            <input type="file" id="bgInput" accept="image/*">
+                        </div>
+
+                        <div class="input-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label for="albumInput">4. Album Cover</label>
+                                <button id="removeAlbumBtn" class="btn text-danger small"
+                                    style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
+                            </div>
+                            <input type="file" id="albumInput" accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="margin-top: -0.5rem;">
+                        <label for="albumUrl">Or paste Album Cover URL</label>
+                        <div style="display: flex; gap: 0.5rem; width: 100%;">
+                            <input type="text" id="albumUrl" placeholder="Paste URL..." style="flex: 1;">
+                            <button id="loadAlbumUrl" class="btn small" style="width: auto; padding: 0 1.2rem; margin: 0;">Load</button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="input-group">
-                    <label for="creditsName">Credits Name</label>
-                    <input type="text" id="creditsName" placeholder="e.g. DJ Awesome">
+                <!-- Tab 2: Song Details & Info -->
+                <div class="tab-content" id="tab-details">
+                    <div class="input-group">
+                        <label for="songTitleInput">Song Title</label>
+                        <input type="text" id="songTitleInput" placeholder="e.g. Blinding Lights">
+                    </div>
+                    <div class="input-group">
+                        <label for="songArtistInput">Artist Name</label>
+                        <input type="text" id="songArtistInput" placeholder="e.g. The Weeknd">
+                    </div>
+                    <div class="input-group">
+                        <label for="creditsName">Credits Name</label>
+                        <input type="text" id="creditsName" placeholder="e.g. DJ Awesome">
+                    </div>
                 </div>
 
-                <div class="input-group">
-                    <label for="lrcEditor">Lyric Editor (Live Edit)</label>
-                    <textarea id="lrcEditor" placeholder="Upload an .lrc/.ttml file or type lyrics here..."></textarea>
+                <!-- Tab 3: Design & Styling -->
+                <div class="tab-content" id="tab-style">
+                    <div class="customization-grid">
+                        <div class="input-group">
+                            <label for="bgStyleSelect">BG Style</label>
+                            <select id="bgStyleSelect">
+                                <option value="gradient">Gradient Pulse</option>
+                                <option value="reactive">Lyric Reactive</option>
+                                <option value="albumBlur">Blurred Album Cover</option>
+                                <option value="materialYou">✨ Album Cover Colors Gradient</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="fontSelect">Font</label>
+                            <select id="fontSelect">
+                                <option value="Outfit">Outfit (Default)</option>
+                                <option value="'Inter', sans-serif">Inter</option>
+                                <option value="'Roboto', sans-serif">Roboto</option>
+                                <option value="'Playfair Display', serif">Playfair</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="lyricColor">Text Color</label>
+                            <input type="color" id="lyricColor" value="#ffffff">
+                        </div>
+                        <div class="input-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label for="glowColor">Glow Color</label>
+                                <label
+                                    style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem; cursor: pointer; user-select: none; color: var(--text-muted);">
+                                    <input type="checkbox" id="dynamicGlow"
+                                        style="cursor: pointer; width: auto; height: auto; margin: 0;"> Match Album
+                                </label>
+                            </div>
+                            <input type="color" id="glowColor" value="#6366f1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Lyric Editor -->
+                <div class="tab-content" id="tab-editor">
+                    <div class="input-group" style="height: 100%;">
+                        <label for="lrcEditor">Lyric Editor (Live Edit)</label>
+                        <textarea id="lrcEditor" placeholder="Upload an .lrc/.ttml file or type lyrics here..." style="min-height: 250px;"></textarea>
+                    </div>
                 </div>
 
                 <div class="action-buttons">
@@ -127,33 +171,149 @@
                 <div class="step-card">
                     <div class="step-number">1</div>
                     <h3>Prepare Audio</h3>
-                    <p>Upload a high-quality audio file (.mp3 or .wav). If you need to isolate or clean up the audio first, you can use <a href="https://vocalremover.org" target="_blank" rel="noopener">vocalremover.org</a>.</p>
+                    <p>Upload a high-quality audio file (.mp3 or .wav). If you need to isolate or clean up the audio
+                        first, you can use <a href="https://vocalremover.org" target="_blank"
+                            rel="noopener">vocalremover.org</a>.</p>
                 </div>
                 <div class="step-card">
                     <div class="step-number">2</div>
                     <h3>Get Lyrics</h3>
-                    <p>Obtain a synchronized lyric file (.lrc or .ttml). You can easily find synced lyrics for any song at <a href="https://youlyplus.prjktla.my.id/findlyrics.html" target="_blank" rel="noopener">Youly Plus Find Lyrics</a>.</p>
+                    <p>Obtain a synchronized lyric file (.lrc or .ttml). You can easily find synced lyrics for any song
+                        at <a href="https://youlyplus.prjktla.my.id/findlyrics.html" target="_blank"
+                            rel="noopener">Youly Plus Find Lyrics</a>.</p>
                 </div>
                 <div class="step-card">
                     <div class="step-number">3</div>
                     <h3>Customize & Design</h3>
-                    <p>Add a background image or album cover. Choose your font, adjust text colors, add a glowing effect, and set your credits name.</p>
+                    <p>Add a background image or album cover. Choose your font, adjust text colors, add a glowing
+                        effect, and set your credits name.</p>
                 </div>
                 <div class="step-card">
                     <div class="step-number">4</div>
                     <h3>Export Video</h3>
-                    <p>Preview the video in real-time. When satisfied, click "Generate & Download Video" to export your masterpiece as a high-quality video file.</p>
+                    <p>Preview the video in real-time. When satisfied, click "Generate & Download Video" to export your
+                        masterpiece as a high-quality video file.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="faq-panel glass-panel" style="margin-top: 1rem;">
+            <h2>Frequently Asked Questions</h2>
+            <div class="faq-grid">
+                <div class="faq-card">
+                    <h3>Why is the video frame rate (FPS) really low?</h3>
+                    <p>Since rendering and video compression occur in real-time inside your browser, the frame rate
+                        depends on how much CPU and GPU power is available. If your device is older, busy, or
+                        underpowered, it may skip frames. We recommend closing other browser tabs and heavy apps during
+                        export.</p>
+                </div>
+                <div class="faq-card">
+                    <h3>Why does it play the full song when I export?</h3>
+                    <p>To capture both the audio and video tracks in sync without uploading your files to a server, the
+                        browser must play and record the media stream in real-time from start to finish. Fast-forwarding
+                        is not supported by standard browser recording APIs.</p>
+                </div>
+                <div class="faq-card">
+                    <h3>Why does it depend on my hardware?</h3>
+                    <p>To keep this application completely free and protect your privacy, all rendering and encoding are
+                        computed locally on your device. Zero data is ever sent to a remote server, meaning the speed is
+                        limited only by your computer's hardware capability.</p>
+                </div>
+                <div class="faq-card">
+                    <h3>Does it matter what browser I use?</h3>
+                    <p>Yes, browser support varies! Modern Chromium-based browsers (Google Chrome, Microsoft Edge,
+                        Brave, Opera) offer the best performance and codec compatibility. Mozilla Firefox is also
+                        supported, but Chrome or Edge are highly recommended for the smoothest exports.</p>
+                </div>
+                <div class="faq-card">
+                    <h3>Does this app send my media files to any servers?</h3>
+                    <p>No! This is a static site hosted entirely on GitHub Pages. We do not own or run any backend
+                        servers. All processing is done 100% locally in your browser. If any connection or hosting logs
+                        are collected, they are handled by GitHub itself. Please refer to the <a
+                            href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement"
+                            target="_blank" rel="noopener">GitHub Privacy Statement</a> for more details.</p>
+                </div>
+                <div class="faq-card">
+                    <h3>Can I use this program offline?</h3>
+                    <p>Yes! Once the page is loaded, you can disconnect from the internet completely and the application
+                        will continue to work perfectly. This confirms that all rendering, audio processing, and video
+                        generation occur entirely offline on your local computer.</p>
+                </div>
+                <div class="faq-card">
+                    <h3>I don't have a lyric file for my song</h3>
+                    <p>You can search for pre-synchronized lyric files using the resources recommended in our guide.
+                        Alternatively, you can write the synchronization tags yourself in the Live Editor, or use the
+                        interactive <a href="https://amll-ttml-tool.stevexmh.net/" target="_blank" rel="noopener">AMLL
+                            TTML Tool</a> to easily sync lyrics word-by-word.</p>
+                </div>
+                <div class="faq-card">
+                    <h3>Will you ever support automatic audio transcription?</h3>
+                    <p>No, we will not. In order to keep this application 100% serverless (running entirely offline on
+                        your own device), we do not send your audio files to cloud-based AI transcription servers. We
+                        recommend using the tools recommended in our guide to find or generate synchronized lyric files
+                        beforehand.</p>
+                </div>
+                <div class="faq-card">
+                    <h3>What format is the video exported as and why?</h3>
+                    <p>Videos are exported as standard WebM (or MP4 in some browsers). We utilize the browser's built-in
+                        <code>MediaRecorder</code> API to compile the canvas frames and audio stream directly on your
+                        computer. This provides high-quality compression and fast processing without needing any
+                        external server-side video rendering software.
+                    </p>
                 </div>
             </div>
         </section>
 
         <footer>
-            <p class="disclaimer">Disclaimer: This application does not condone piracy. Please ensure you own the rights to, or have explicit permission to use, any audio files uploaded to this service.</p>
-            <p class="ai-disclaimer">This tool was created with the assistance of AI in parts of the creation process.</p>
-            <p class="github-link"><a href="https://github.com/Zexerif/lyric-video-maker" target="_blank" rel="noopener">View on GitHub</a></p>
+            <p class="disclaimer">Disclaimer: This application does not condone piracy. Please ensure you own the rights
+                to, or have explicit permission to use, any audio files uploaded to this service.</p>
+            <p class="ai-disclaimer">This tool was created with the assistance of AI in parts of the creation process.
+            </p>
+            <p class="github-link"><a href="https://github.com/Zexerif/lyric-video-maker" target="_blank"
+                    rel="noopener">View on GitHub</a></p>
         </footer>
     </div>
 
-    <script src="app.js?v=1.0.5"></script>
+    <div id="exportModal" class="modal-overlay">
+        <div class="modal-content glass-panel">
+            <h2>⚠️ Important Export Instructions</h2>
+            <div class="modal-body">
+                <p class="modal-subtitle">Please review these critical details before exporting your video:</p>
+                <div class="modal-grid">
+                    <div class="modal-card">
+                        <div class="modal-card-icon">🖥️</div>
+                        <div class="modal-card-title">Stay on This Tab</div>
+                        <div class="modal-card-desc">Do not close the browser tab during export. The song will play
+                            completely to record it.</div>
+                    </div>
+                    <div class="modal-card">
+                        <div class="modal-card-icon">🚫</div>
+                        <div class="modal-card-title">Keep Window Active</div>
+                        <div class="modal-card-desc">Do not open a different tab or minimize this window. Browsers
+                            throttle background tabs, which will ruin the video recording.</div>
+                    </div>
+                    <div class="modal-card">
+                        <div class="modal-card-icon">⚙️</div>
+                        <div class="modal-card-title">Hardware FPS</div>
+                        <div class="modal-card-desc">Final video frame rate is hardware-dependent. Older or busy
+                            CPUs/GPUs may drop frames during real-time rendering.</div>
+                    </div>
+                    <div class="modal-card">
+                        <div class="modal-card-icon">🔒</div>
+                        <div class="modal-card-title">100% Private & Free</div>
+                        <div class="modal-card-desc">Rendered entirely on your device to save server costs. Absolutely
+                            nothing is sent to our servers.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="cancelExportBtn" class="btn secondary">Cancel</button>
+                <button id="confirmExportBtn" class="btn primary" disabled>Start Export (5s)</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=1.0.16"></script>
 </body>
+
 </html>

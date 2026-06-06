@@ -10,7 +10,7 @@
 
 ## 📸 Demo
 
-![Lyric Video Maker Demo](demo.gif)
+![Lyric Video Maker Demo](demo.png)
 
 ---
 

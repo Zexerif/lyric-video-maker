@@ -8,6 +8,26 @@
     --text-muted: #cbd5e1;
     --glass-bg: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 255, 255, 0.08);
+    
+    /* Dynamic background glow variables */
+    --glow-c1: rgba(99, 102, 241, 0.15);
+    --glow-c2: rgba(236, 72, 153, 0.15);
+
+    /* Dynamic theme variables */
+    --theme-primary: var(--primary);
+    --theme-primary-hover: var(--primary-hover);
+    --theme-secondary: var(--secondary);
+    --theme-secondary-hover: var(--secondary-hover);
+    --theme-primary-shadow: rgba(99, 102, 241, 0.4);
+    --theme-secondary-shadow: rgba(236, 72, 153, 0.15);
+
+    /* Dynamic text gradient variables */
+    --theme-gradient-start: var(--primary);
+    --theme-gradient-end: var(--secondary);
+
+    /* Dynamic element gradient variables */
+    --theme-element-gradient-start: var(--primary);
+    --theme-element-gradient-end: var(--secondary);
 }
 
 * {
@@ -33,9 +53,10 @@ body {
     width: 100vw;
     height: 100vh;
     z-index: -1;
-    background: radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15), transparent 25%);
+    background: radial-gradient(circle at 15% 50%, var(--glow-c1), transparent 25%),
+                radial-gradient(circle at 85% 30%, var(--glow-c2), transparent 25%);
     animation: pulse 15s infinite alternate;
+    transition: background 1.5s ease;
 }
 
 @keyframes pulse {
@@ -86,7 +107,7 @@ body {
 .drop-message h2 {
     font-size: 3.5rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-end));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 1rem;
@@ -115,7 +136,7 @@ header {
 header h1 {
     font-size: 3rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-end));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.5rem;
@@ -128,7 +149,7 @@ header p {
 
 main {
     display: grid;
-    grid-template-columns: 400px 1fr;
+    grid-template-columns: 450px 1fr;
     gap: 2rem;
     flex: 1;
 }
@@ -169,35 +190,43 @@ main {
 
 input[type="file"] {
     background: rgba(0, 0, 0, 0.2);
-    padding: 1rem;
+    padding: 0.6rem 0.8rem;
     border-radius: 12px;
     border: 1px dashed var(--glass-border);
     color: var(--text-main);
     font-family: inherit;
     transition: all 0.3s ease;
     cursor: pointer;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    box-sizing: border-box;
 }
 
 input[type="file"]:hover {
-    border-color: var(--primary);
-    background: rgba(99, 102, 241, 0.05);
+    border-color: var(--theme-primary);
+    background: var(--theme-primary-shadow);
 }
 
 input[type="file"]::file-selector-button {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     color: var(--text-main);
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.8rem;
     border-radius: 8px;
-    margin-right: 1rem;
+    margin-right: 0.5rem;
     cursor: pointer;
     font-family: inherit;
     transition: all 0.2s ease;
+    font-size: 0.8rem;
 }
 
 input[type="file"]::file-selector-button:hover {
-    background: var(--primary);
-    border-color: var(--primary);
+    background: var(--theme-primary);
+    border-color: var(--theme-primary);
 }
 
 .action-buttons {
@@ -215,7 +244,11 @@ input[type="file"]::file-selector-button:hover {
     border-radius: 12px;
     border: none;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:hover {
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .btn:disabled {
@@ -225,32 +258,32 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .btn.primary {
-    background: var(--primary);
+    background: var(--theme-primary);
     color: white;
-    box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39);
+    box-shadow: 0 4px 14px 0 var(--theme-primary-shadow);
 }
 
 .btn.primary:not(:disabled):hover {
-    background: var(--primary-hover);
+    background: var(--theme-primary-hover);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.5);
+    box-shadow: 0 6px 20px 0 var(--theme-primary-shadow);
 }
 
 .btn.secondary {
     background: transparent;
-    color: var(--secondary);
-    border: 2px solid var(--secondary);
+    color: var(--theme-secondary);
+    border: 2px solid var(--theme-secondary);
 }
 
 .btn.secondary:not(:disabled):hover {
-    background: rgba(236, 72, 153, 0.1);
+    background: var(--theme-secondary-shadow);
     transform: translateY(-2px);
 }
 
 .status-message {
     margin-top: 1rem;
     font-size: 0.9rem;
-    color: var(--secondary);
+    color: var(--theme-gradient-end);
     text-align: center;
     min-height: 1.5em;
 }
@@ -299,7 +332,7 @@ input[type="text"], #creditsName {
 
 input[type="text"]:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--theme-primary);
     background: rgba(0, 0, 0, 0.3);
 }
 
@@ -308,15 +341,15 @@ input[type="text"]:focus {
     padding: 0.8rem;
     font-size: 0.9rem;
     white-space: nowrap;
-    background: rgba(99, 102, 241, 0.1);
-    border: 1px solid var(--primary);
+    background: var(--theme-primary-shadow);
+    border: 1px solid var(--theme-primary);
     color: var(--text-main);
     border-radius: 12px;
 }
 
 .btn.small:hover {
-    background: var(--primary);
-    border-color: var(--primary);
+    background: var(--theme-primary);
+    border-color: var(--theme-primary);
 }
 
 /* QoL Additions */
@@ -336,6 +369,19 @@ select {
     color: var(--text-main);
     font-family: inherit;
     cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--theme-primary);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+select option {
+    background-color: #141624;
+    color: var(--text-main);
+    padding: 0.5rem;
 }
 
 input[type="color"] {
@@ -372,7 +418,7 @@ textarea {
 
 textarea:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--theme-primary);
     background: rgba(0, 0, 0, 0.3);
 }
 
@@ -388,7 +434,7 @@ textarea:focus {
 .progress-bar {
     width: 0%;
     height: 100%;
-    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    background: linear-gradient(90deg, var(--theme-element-gradient-start), var(--theme-element-gradient-end));
     transition: width 0.3s ease;
 }
 
@@ -402,7 +448,7 @@ textarea:focus {
     font-size: 1.8rem;
     font-weight: 800;
     margin-bottom: 2rem;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-end));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-align: center;
@@ -420,21 +466,22 @@ textarea:focus {
     border-radius: 16px;
     padding: 1.5rem;
     position: relative;
-    transition: all 0.3s ease;
+    transition: all 0.8s ease;
 }
 
 .step-card:hover {
     transform: translateY(-4px);
     background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(99, 102, 241, 0.3);
+    border-color: var(--theme-primary-shadow);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .step-number {
     position: absolute;
     top: -12px;
     left: 20px;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: linear-gradient(135deg, var(--theme-element-gradient-start), var(--theme-element-gradient-end));
     color: white;
     width: 28px;
     height: 28px;
@@ -444,7 +491,8 @@ textarea:focus {
     justify-content: center;
     font-weight: 700;
     font-size: 0.9rem;
-    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 10px var(--theme-primary-shadow);
+    transition: all 0.8s ease;
 }
 
 .step-card h3 {
@@ -461,17 +509,17 @@ textarea:focus {
     line-height: 1.5;
 }
 
-.step-card a {
-    color: #818cf8;
+.step-card a, .faq-card a {
+    color: var(--theme-gradient-start);
     text-decoration: none;
     font-weight: 600;
     transition: color 0.2s ease;
-    border-bottom: 1px dashed rgba(129, 140, 248, 0.4);
+    border-bottom: 1px dashed var(--theme-gradient-start);
 }
 
-.step-card a:hover {
-    color: var(--secondary);
-    border-bottom-color: var(--secondary);
+.step-card a:hover, .faq-card a:hover {
+    color: var(--theme-gradient-end);
+    border-bottom-color: var(--theme-gradient-end);
 }
 
 footer {
@@ -485,7 +533,7 @@ footer {
     font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 0.05em;
-    color: var(--secondary);
+    color: var(--theme-gradient-end);
     opacity: 0.8;
     max-width: 800px;
     margin: 0 auto;
@@ -521,6 +569,287 @@ footer {
     opacity: 1;
     color: white;
     background: rgba(255, 255, 255, 0.05);
-    border-color: var(--primary);
-    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 15px var(--theme-primary-shadow);
+}
+
+/* Custom Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 11, 18, 0.85); /* Slightly darker and richer */
+    backdrop-filter: blur(20px); /* Deeper blur for premium feel */
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.modal-content {
+    max-width: 600px;
+    width: 90%;
+    background: rgba(20, 22, 36, 0.6) !important; /* frosted dark glass */
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-top: 4px solid var(--theme-gradient-end) !important; /* colorful top accent bar */
+    padding: 3rem !important;
+    border-radius: 32px !important;
+    text-align: left;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8),
+                0 0 100px rgba(99, 102, 241, 0.08); /* subtle ambient glow */
+    transform: scale(0.92) translateY(20px);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Ambient glow accent inside modal */
+.modal-content::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(236, 72, 153, 0.04), transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.modal-overlay.active .modal-content {
+    transform: scale(1) translateY(0);
+}
+
+.modal-content h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    z-index: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.modal-body {
+    color: var(--text-muted);
+    font-size: 0.98rem;
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    z-index: 1;
+    position: relative;
+}
+
+.modal-body p {
+    margin-bottom: 1.2rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.modal-subtitle {
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+}
+
+.modal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 600px) {
+    .modal-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.modal-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.modal-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(236, 72, 153, 0.2);
+}
+
+.modal-card-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.2rem;
+}
+
+.modal-card-title {
+    font-weight: 700;
+    color: #f8fafc;
+    font-size: 0.95rem;
+}
+
+.modal-card-desc {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1.2rem;
+    justify-content: flex-end;
+    z-index: 1;
+    position: relative;
+}
+
+.modal-actions .btn {
+    padding: 0.9rem 2.2rem;
+    font-size: 1rem;
+    border-radius: 14px;
+}
+
+/* FAQ Panel Styles */
+.faq-panel {
+    margin-top: 1rem;
+    padding: 2.5rem;
+}
+
+.faq-panel h2 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+}
+
+.faq-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .faq-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .faq-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.faq-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.8s ease;
+}
+
+.faq-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--theme-primary-shadow);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.faq-card h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    color: var(--text-main);
+}
+
+.faq-card p {
+    font-size: 0.92rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+}
+
+/* Tabs Navigation */
+.tabs-nav {
+    display: flex;
+    gap: 0.4rem;
+    border-bottom: 1px dashed var(--glass-border);
+    padding-bottom: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.tab-btn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    padding: 0.6rem 0.2rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    white-space: nowrap;
+}
+
+.tab-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.tab-btn.active {
+    color: white;
+    background: var(--theme-primary-shadow);
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 10px var(--theme-primary-shadow);
+}
+
+/* Tab Content Visibility */
+.tab-content {
+    display: none;
+    flex-direction: column;
+    gap: 1.5rem;
+    opacity: 0;
+    min-height: 290px; /* Stable height to prevent buttons from jumping */
+}
+
+.tab-content.active {
+    display: flex;
+    animation: tabSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes tabSlideIn {
+    0% { 
+        opacity: 0; 
+        transform: translateY(12px) scale(0.98); 
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
 }
