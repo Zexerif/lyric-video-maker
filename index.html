@@ -11,7 +11,7 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&family=Lexend:wght@400;600;800&family=Bebas+Neue&family=Montserrat:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@700&family=Permanent+Marker&family=Pacifico&family=Comic+Neue:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/index.css">
-    <link rel="stylesheet" href="styles.css?v=1.0.23">
+    <link rel="stylesheet" href="styles.css?v=1.0.32">
 </head>
 
 <body>
@@ -93,9 +93,35 @@
                         <label for="songArtistInput">Artist Name</label>
                         <input type="text" id="songArtistInput" placeholder="e.g. The Weeknd">
                     </div>
-                    <div class="input-group">
-                        <label for="creditsName">Credits Name</label>
-                        <input type="text" id="creditsName" placeholder="e.g. DJ Awesome">
+                    <div class="input-group" style="margin-bottom: 0.5rem;">
+                        <label>Credits</label>
+                        <div id="creditsList" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                            <!-- Default credit row -->
+                            <div class="credits-row" style="display: flex; gap: 0.5rem; align-items: center;">
+                                <select class="credits-prefix" style="flex: 1.2; margin: 0; min-width: 0;">
+                                    <option value="Lyric video by">Lyric video by</option>
+                                    <option value="Mix by">Mix by</option>
+                                    <option value="Remix by">Remix by</option>
+                                    <option value="Music by">Music by</option>
+                                    <option value="Video by">Video by</option>
+                                    <option value="Presented by">Presented by</option>
+                                    <option value="Created for">Created for</option>
+                                </select>
+                                <input type="text" class="credits-name" placeholder="e.g. DJ Awesome" style="flex: 2; margin: 0; min-width: 0;">
+                                <button type="button" class="btn small remove-credit-btn" style="flex: 0.3; padding: 0.8rem 0.5rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid rgb(239, 68, 68); color: rgb(239, 68, 68); display: none; font-size: 0.8rem; border-radius: 12px; justify-content: center; align-items: center; cursor: pointer; height: 100%;">✕</button>
+                            </div>
+                        </div>
+                        <button type="button" id="addCreditBtn" class="btn small secondary" style="width: auto; align-self: flex-start; padding: 0.5rem 1rem; margin-top: 0.5rem; font-size: 0.85rem; border-radius: 8px;">+ Add Credit Line</button>
+                    </div>
+                    <div class="input-group-row" style="display: flex; gap: 1rem;">
+                        <div class="input-group" style="flex: 1;">
+                            <label for="songKeyInput">Song Key</label>
+                            <input type="text" id="songKeyInput" placeholder="e.g. C# Minor">
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label for="songBpmInput">BPM</label>
+                            <input type="number" id="songBpmInput" placeholder="e.g. 120" min="20" max="300">
+                        </div>
                     </div>
                 </div>
 
@@ -284,6 +310,7 @@
             </p>
             <p class="github-link"><a href="https://github.com/Zexerif/lyric-video-maker" target="_blank"
                     rel="noopener">View on GitHub</a></p>
+            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v1.0.3</p>
         </footer>
     </div>
 
@@ -319,6 +346,13 @@
                     </div>
                 </div>
             </div>
+            <div class="modal-settings" style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--glass-border);">
+                <label for="exportFpsSelect" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Target Frame Rate</label>
+                <select id="exportFpsSelect" style="width: auto; padding: 0.4rem 2rem 0.4rem 1rem; font-size: 0.9rem; margin: 0; border-radius: 8px;">
+                    <option value="30">30 FPS (Standard - Recommended)</option>
+                    <option value="60">60 FPS (Ultra Smooth - Needs powerful hardware)</option>
+                </select>
+            </div>
             <div class="modal-actions">
                 <button id="cancelExportBtn" class="btn secondary">Cancel</button>
                 <button id="confirmExportBtn" class="btn primary" disabled>Start Export (5s)</button>
@@ -343,7 +377,7 @@
         <span style="font-family: 'Comic Neue';">a</span>
     </div>
 
-    <script src="app.js?v=1.0.23"></script>
+    <script src="app.js?v=1.0.32"></script>
 </body>
 
 </html>

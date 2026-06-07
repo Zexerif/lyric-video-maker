@@ -18,12 +18,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const albumUrlInput = document.getElementById('albumUrl');
     const loadAlbumUrlBtn = document.getElementById('loadAlbumUrl');
     const bgStyleSelect = document.getElementById('bgStyleSelect');
-    const creditsNameInput = document.getElementById('creditsName');
+    const creditsList = document.getElementById('creditsList');
+    const addCreditBtn = document.getElementById('addCreditBtn');
     const dynamicGlowCheckbox = document.getElementById('dynamicGlow');
     const removeBgBtn = document.getElementById('removeBgBtn');
     const removeAlbumBtn = document.getElementById('removeAlbumBtn');
     const songTitleInput = document.getElementById('songTitleInput');
     const songArtistInput = document.getElementById('songArtistInput');
+    const songKeyInput = document.getElementById('songKeyInput');
+    const songBpmInput = document.getElementById('songBpmInput');
 
     // Helper to ensure extracted album colors are adjusted properly for text or elements
     function adjustColorForReadability(r, g, b, minLightness = 0.7, maxLightness = 1.0, minSaturation = 0.5) {
@@ -109,11 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
         bgInput.value = '';
         albumInput.value = '';
         lrcEditor.value = '';
-        creditsNameInput.value = '';
         removeBgBtn.style.display = 'none';
         removeAlbumBtn.style.display = 'none';
         songTitleInput.value = '';
         songArtistInput.value = '';
+        songKeyInput.value = '';
+        songBpmInput.value = '';
         
         // Reset personalization controls to default state
         bgStyleSelect.value = 'gradient';
@@ -122,6 +126,24 @@ document.addEventListener('DOMContentLoaded', () => {
         glowColorInput.value = '#6366f1';
         dynamicGlowCheckbox.checked = false;
         glowColorInput.disabled = false;
+
+        // Reset credits to default single empty row
+        creditsList.innerHTML = `
+            <div class="credits-row" style="display: flex; gap: 0.5rem; align-items: center;">
+                <select class="credits-prefix" style="flex: 1.2; margin: 0; min-width: 0;">
+                    <option value="Lyric video by">Lyric video by</option>
+                    <option value="Mix by">Mix by</option>
+                    <option value="Remix by">Remix by</option>
+                    <option value="Music by">Music by</option>
+                    <option value="Video by">Video by</option>
+                    <option value="Presented by">Presented by</option>
+                    <option value="Created for">Created for</option>
+                </select>
+                <input type="text" class="credits-name" placeholder="e.g. DJ Awesome" style="flex: 2; margin: 0; min-width: 0;">
+                <button type="button" class="btn small remove-credit-btn" style="flex: 0.3; padding: 0.8rem 0.5rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid rgb(239, 68, 68); color: rgb(239, 68, 68); display: none; font-size: 0.8rem; border-radius: 12px; justify-content: center; align-items: center; cursor: pointer; height: 100%;">✕</button>
+            </div>
+        `;
+        attachCreditRowListeners(creditsList.querySelector('.credits-row'));
     }
     resetInputs();
 
@@ -385,7 +407,52 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
-    creditsNameInput.addEventListener('input', () => {
+    function attachCreditRowListeners(row) {
+        row.querySelector('.credits-prefix').addEventListener('change', () => {
+            drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+        });
+        row.querySelector('.credits-name').addEventListener('input', () => {
+            drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+        });
+        row.querySelector('.remove-credit-btn').addEventListener('click', () => {
+            row.remove();
+            updateRemoveButtonsVisibility();
+            drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+        });
+    }
+
+    function updateRemoveButtonsVisibility() {
+        const rows = creditsList.querySelectorAll('.credits-row');
+        const removeBtns = creditsList.querySelectorAll('.remove-credit-btn');
+        if (rows.length > 1) {
+            removeBtns.forEach(btn => btn.style.display = 'flex');
+        } else {
+            removeBtns.forEach(btn => btn.style.display = 'none');
+        }
+    }
+
+    addCreditBtn.addEventListener('click', () => {
+        const newRow = document.createElement('div');
+        newRow.className = 'credits-row';
+        newRow.style.display = 'flex';
+        newRow.style.gap = '0.5rem';
+        newRow.style.alignItems = 'center';
+        newRow.innerHTML = `
+            <select class="credits-prefix" style="flex: 1.2; margin: 0; min-width: 0;">
+                <option value="Lyric video by">Lyric video by</option>
+                <option value="Mix by">Mix by</option>
+                <option value="Remix by">Remix by</option>
+                <option value="Music by">Music by</option>
+                <option value="Video by">Video by</option>
+                <option value="Presented by">Presented by</option>
+                <option value="Created for">Created for</option>
+            </select>
+            <input type="text" class="credits-name" placeholder="e.g. DJ Awesome" style="flex: 2; margin: 0; min-width: 0;">
+            <button type="button" class="btn small remove-credit-btn" style="flex: 0.3; padding: 0.8rem 0.5rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid rgb(239, 68, 68); color: rgb(239, 68, 68); display: flex; font-size: 0.8rem; border-radius: 12px; justify-content: center; align-items: center; cursor: pointer; height: 100%;">✕</button>
+        `;
+        creditsList.appendChild(newRow);
+        attachCreditRowListeners(newRow);
+        updateRemoveButtonsVisibility();
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
@@ -394,6 +461,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     songArtistInput.addEventListener('input', () => {
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
+    songKeyInput.addEventListener('input', () => {
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
+    songBpmInput.addEventListener('input', () => {
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
@@ -764,16 +839,91 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.0.2`, 40, 40);
         ctx.restore();
 
-        const creditsName = creditsNameInput.value.trim();
-        if (creditsName) {
+        // Draw Custom Credits (multiple rows grow upwards from the bottom left)
+        const creditRows = document.querySelectorAll('#creditsList .credits-row');
+        let creditsY = canvas.height - 40;
+        
+        // Loop backwards so the first credit line added is at the very bottom
+        for (let i = creditRows.length - 1; i >= 0; i--) {
+            const row = creditRows[i];
+            const prefix = row.querySelector('.credits-prefix').value;
+            const name = row.querySelector('.credits-name').value.trim();
+            
+            if (name) {
+                ctx.save();
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.font = `600 30px "${currentFont}", sans-serif`;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 10;
+                ctx.fillText(`${prefix} ${name}`, 40, creditsY);
+                ctx.restore();
+                
+                creditsY -= 42; // offset upward for the next credit line
+            }
+        }
+
+        // Draw Song Key and BPM (Top Right)
+        const songKey = songKeyInput.value.trim();
+        const songBpmVal = songBpmInput.value.trim();
+        const bpm = parseFloat(songBpmVal);
+
+        if (songKey || !isNaN(bpm)) {
             ctx.save();
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'bottom';
-            ctx.font = `600 30px "${currentFont}", sans-serif`;
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
             ctx.shadowBlur = 10;
-            ctx.fillText(`Lyric video by ${creditsName}`, 40, canvas.height - 40);
+
+            let textParts = [];
+            if (songKey) textParts.push(`Key: ${songKey}`);
+            if (!isNaN(bpm)) textParts.push(`${songBpmVal} BPM`);
+
+            const infoText = textParts.join('  |  ');
+            ctx.font = `600 24px "${currentFont}", sans-serif`;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            
+            // Draw BPM visualizer pulse dot if BPM is set and we are playing/recording
+            if (!isNaN(bpm) && bpm > 0) {
+                // Calculate position for visualizer dot
+                const textWidth = ctx.measureText(infoText).width;
+                const dotX = canvas.width - 40 - textWidth - 25;
+                const dotY = 40 + 12; // align with middle of text line (24px font)
+
+                // BPM pulse calculation
+                // Phase of the beat (0 to 1)
+                const beatDuration = 60 / bpm;
+                const beatPhase = (currentTime / beatDuration) % 1;
+                
+                // Pulse scaling effect: starts large and bright, decays exponentially
+                const pulseScale = Math.exp(-beatPhase * 4);
+                const baseRadius = 8;
+                const coreRadius = baseRadius + pulseScale * 4;
+
+                // 1. Draw rhythm game approach ring (shrinks to coreRadius on the beat)
+                const approachRadius = baseRadius + (1 - beatPhase) * 24;
+                ctx.beginPath();
+                ctx.arc(dotX, dotY, approachRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = activeGlowColor;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.8 * (1 - beatPhase);
+                ctx.stroke();
+
+                // 2. Draw solid inner core (pulses on the beat)
+                ctx.beginPath();
+                ctx.arc(dotX, dotY, coreRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowColor = activeGlowColor;
+                ctx.shadowBlur = 15 * pulseScale;
+                ctx.globalAlpha = 0.9 + pulseScale * 0.1;
+                ctx.fill();
+                
+                ctx.globalAlpha = 1.0;
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.fillText(infoText, canvas.width - 40, 40);
             ctx.restore();
         }
 
@@ -784,29 +934,36 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.textBaseline = 'middle';
         const lyricX = 900; // Starting point for lyrics on the right
         const centerY = canvas.height / 2;
-        const lineSpacing = 180;
 
-        function wrapText(context, lyric, x, y, maxWidth, lineHeight, isCurrent, currentTime, opacity) {
+        function getWrappedLines(context, lyric, maxWidth, font) {
+            if (lyric.cachedLines && lyric.cachedFont === font && lyric.cachedMaxWidth === maxWidth) {
+                return lyric.cachedLines;
+            }
+
+            context.save();
+            context.font = font;
+
             let items = [];
-            
             if (lyric.words && lyric.words.length > 0) {
-                items = lyric.words;
+                items = lyric.words.map(w => ({ ...w }));
             } else {
                 const textWords = lyric.text.split(' ');
                 for (let i = 0; i < textWords.length; i++) {
-                    items.push({ text: textWords[i] + (i < textWords.length - 1 ? ' ' : ''), time: lyric.time, endTime: lyric.time + 1 });
+                    items.push({
+                        text: textWords[i] + (i < textWords.length - 1 ? ' ' : ''),
+                        time: lyric.time,
+                        endTime: lyric.time + 1
+                    });
                 }
             }
 
             const lines = [];
             let currentLine = [];
             let currentLineWidth = 0;
-
             const spaceWidth = context.measureText(' ').width;
 
             for (let n = 0; n < items.length; n++) {
                 const item = items[n];
-                
                 let text = item.text;
                 let trailingSpaces = 0;
                 let leadingSpaces = 0;
@@ -841,75 +998,152 @@ document.addEventListener('DOMContentLoaded', () => {
                 lines.push({ width: currentLineWidth, items: currentLine });
             }
 
+            context.restore();
+            lyric.cachedLines = lines;
+            lyric.cachedFont = font;
+            lyric.cachedMaxWidth = maxWidth;
+            return lines;
+        }
+
+        function drawWrappedLines(context, lyric, lines, x, y, lineHeight, isCurrent, currentTime, opacity) {
             const startY = y - ((lines.length - 1) * lineHeight) / 2;
             
-            for (let i = 0; i < lines.length; i++) {
-                let currentX = x;
-                const line = lines[i];
-                const lineY = startY + (i * lineHeight);
+            if (lyric.words && lyric.words.length > 0) {
+                // TTML word-by-word drawing logic for karaoke highlighting
+                const spaceWidth = context.measureText(' ').width;
+                for (let i = 0; i < lines.length; i++) {
+                    let currentX = x;
+                    const line = lines[i];
+                    const lineY = startY + (i * lineHeight);
 
-                for (let j = 0; j < line.items.length; j++) {
-                    const item = line.items[j];
-                    
-                    if (isCurrent && lyric.words) {
-                        let progress = 0;
-                        const duration = item.endTime - item.time;
-                        if (currentTime >= item.endTime || duration <= 0) {
-                            progress = 1;
-                        } else if (currentTime > item.time) {
-                            progress = (currentTime - item.time) / duration;
-                        }
-
+                    for (let j = 0; j < line.items.length; j++) {
+                        const item = line.items[j];
                         currentX += item.leadingSpaces * spaceWidth;
                         
-                        if (item.renderText) {
-                            // Base inactive text
-                            context.fillStyle = `rgba(203, 213, 225, 0.5)`;
-                            context.shadowColor = 'transparent';
-                            context.shadowBlur = 0;
-                            context.fillText(item.renderText, currentX, lineY);
-
-                            // Overlay active text clipped by progress
-                            if (progress > 0) {
-                                context.save();
-                                context.beginPath();
-                                context.rect(currentX, lineY - lineHeight, item.cleanWidth * progress, lineHeight * 2);
-                                context.clip();
-                                
-                                context.fillStyle = currentLyricColor;
-                                context.shadowColor = activeGlowColor;
-                                context.shadowBlur = 20 * opacity;
-                                context.fillText(item.renderText, currentX, lineY);
-                                context.restore();
+                        if (isCurrent) {
+                            let progress = 0;
+                            const duration = item.endTime - item.time;
+                            if (currentTime >= item.endTime || duration <= 0) {
+                                progress = 1;
+                            } else if (currentTime > item.time) {
+                                progress = (currentTime - item.time) / duration;
                             }
-                            
-                            currentX += item.cleanWidth;
+
+                            if (item.renderText) {
+                                // Base inactive text
+                                context.fillStyle = `rgba(203, 213, 225, 0.5)`;
+                                context.shadowColor = 'transparent';
+                                context.shadowBlur = 0;
+                                context.fillText(item.renderText, currentX, lineY);
+
+                                // Overlay active text clipped by progress
+                                if (progress > 0) {
+                                    context.save();
+                                    context.beginPath();
+                                    context.rect(currentX, lineY - lineHeight, item.cleanWidth * progress, lineHeight * 2);
+                                    context.clip();
+                                    
+                                    context.fillStyle = currentLyricColor;
+                                    context.shadowColor = activeGlowColor;
+                                    context.shadowBlur = 20 * opacity;
+                                    context.fillText(item.renderText, currentX, lineY);
+                                    context.restore();
+                                }
+                                currentX += item.cleanWidth;
+                            }
+                        } else {
+                            if (item.renderText) {
+                                context.fillStyle = `rgba(203, 213, 225, ${opacity * 0.5})`;
+                                context.shadowColor = 'transparent';
+                                context.shadowBlur = 0;
+                                context.fillText(item.renderText, currentX, lineY);
+                                currentX += item.cleanWidth;
+                            }
                         }
-                    } else {
-                        currentX += item.leadingSpaces * spaceWidth;
-                        if (item.renderText) {
-                            context.fillText(item.renderText, currentX, lineY);
-                            currentX += item.cleanWidth;
-                        }
+                        currentX += item.trailingSpaces * spaceWidth;
                     }
-                    currentX += item.trailingSpaces * spaceWidth;
+                }
+            } else {
+                // LRC line-by-line drawing logic using native text rendering
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    const lineY = startY + (i * lineHeight);
+                    
+                    // Reconstruct line text with exact spacing preserved
+                    const lineText = line.items.map(item => {
+                        const leading = ' '.repeat(item.leadingSpaces);
+                        const trailing = ' '.repeat(item.trailingSpaces);
+                        return leading + item.renderText + trailing;
+                    }).join('');
+
+                    if (isCurrent) {
+                        context.fillStyle = currentLyricColor;
+                        context.shadowColor = activeGlowColor;
+                        context.shadowBlur = 20 * opacity;
+                    } else {
+                        context.fillStyle = `rgba(203, 213, 225, ${opacity * 0.5})`;
+                        context.shadowColor = 'transparent';
+                        context.shadowBlur = 0;
+                    }
+                    context.fillText(lineText, x, lineY);
                 }
             }
         }
 
+        // Calculate dynamic Y positions for all lyrics to prevent any overlap
+        const yPositions = new Array(lyrics.length);
+        const heights = new Array(lyrics.length);
+        const wrappedLinesArr = new Array(lyrics.length);
+        
+        // 1. Calculate height and wrap lines for all lyrics
+        for (let j = 0; j < lyrics.length; j++) {
+            const lyric = lyrics[j];
+            const distance = j - smoothedIndex;
+            const absDistance = Math.abs(distance);
+            const scale = Math.max(0.7, 1 - absDistance * 0.1);
+            const fontSize = (j === currentIndex) ? 70 : 50 * scale;
+            const font = (j === currentIndex)
+                ? `bold ${Math.round(fontSize)}px "${currentFont}", sans-serif`
+                : `600 ${Math.round(fontSize)}px "${currentFont}", sans-serif`;
+            
+            const lines = getWrappedLines(ctx, lyric, 900, font);
+            wrappedLinesArr[j] = lines;
+            heights[j] = lines.length * fontSize * 1.3;
+        }
+
+        // 2. Sequential layout starting at y = 0
+        yPositions[0] = 0;
+        const gap = 60; // comfortable gap between lyric blocks
+        for (let j = 1; j < lyrics.length; j++) {
+            yPositions[j] = yPositions[j-1] + heights[j-1]/2 + heights[j]/2 + gap;
+        }
+
+        // 3. Find the y-coordinate of the smoothed index
+        const idxFloor = Math.floor(smoothedIndex);
+        const idxCeil = Math.ceil(smoothedIndex);
+        const fract = smoothedIndex - idxFloor;
+        
+        let ySmooth = 0;
+        if (idxFloor >= 0 && idxFloor < lyrics.length) {
+            const yFloor = yPositions[idxFloor];
+            const yCeil = (idxCeil >= 0 && idxCeil < lyrics.length) ? yPositions[idxCeil] : yFloor;
+            ySmooth = yFloor + fract * (yCeil - yFloor);
+        }
+
+        // 4. Offset all positions so that ySmooth is at centerY
+        const offset = centerY - ySmooth;
+        for (let j = 0; j < lyrics.length; j++) {
+            yPositions[j] += offset;
+        }
+
+        // 5. Draw visible lyrics
         for (let i = Math.max(0, currentIndex - 3); i <= Math.min(lyrics.length - 1, currentIndex + 3); i++) {
             const lyric = lyrics[i];
             const distance = i - smoothedIndex;
-
-            // Calculate opacity based on distance from center (0)
             const absDistance = Math.abs(distance);
             const opacity = Math.max(0, 1 - absDistance * 0.35);
-
-            // Calculate scale based on distance
             const scale = Math.max(0.7, 1 - absDistance * 0.1);
-
-            // Calculate Y position
-            const yPos = centerY + (distance * lineSpacing);
+            const yPos = yPositions[i];
 
             if (opacity > 0) {
                 ctx.save();
@@ -930,7 +1164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ctx.shadowBlur = 0;
                 }
 
-                wrapText(ctx, lyric, 0, 0, 900, fontSize * 1.3, i === currentIndex, currentTime, opacity);
+                drawWrappedLines(ctx, lyric, wrappedLinesArr[i], 0, 0, fontSize * 1.3, i === currentIndex, currentTime, opacity);
                 ctx.restore();
             }
         }
@@ -1079,8 +1313,10 @@ document.addEventListener('DOMContentLoaded', () => {
         audioSource.buffer = audioBuffer;
         audioSource.connect(audioContext.destination);
 
-        // Get canvas visual stream
-        const canvasStream = canvas.captureStream(30); // 30 FPS
+        // Get canvas visual stream with user-selected frame rate
+        const fpsSelect = document.getElementById('exportFpsSelect');
+        const targetFps = fpsSelect ? parseInt(fpsSelect.value) : 30;
+        const canvasStream = canvas.captureStream(targetFps);
 
         // Combine isolated audio and video tracks
         const combinedStream = new MediaStream([
@@ -1104,6 +1340,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                 }
             }
+
+            // Set high bitrate depending on frame rate to ensure pristine visual quality
+            options.videoBitsPerSecond = targetFps === 60 ? 8500000 : 5000000; // 8.5Mbps vs 5Mbps
+            options.audioBitsPerSecond = 256000; // 256kbps audio
 
             mediaRecorder = new MediaRecorder(combinedStream, options);
 
