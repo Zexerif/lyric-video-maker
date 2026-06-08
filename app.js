@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const songArtistInput = document.getElementById('songArtistInput');
     const songKeyInput = document.getElementById('songKeyInput');
     const songBpmInput = document.getElementById('songBpmInput');
+    const backingVocalsSelect = document.getElementById('backingVocalsSelect');
 
     // Helper to ensure extracted album colors are adjusted properly for text or elements
     function adjustColorForReadability(r, g, b, minLightness = 0.7, maxLightness = 1.0, minSaturation = 0.5) {
@@ -126,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         glowColorInput.value = '#6366f1';
         dynamicGlowCheckbox.checked = false;
         glowColorInput.disabled = false;
+        if (backingVocalsSelect) backingVocalsSelect.value = 'styled';
 
         // Reset credits to default single empty row
         creditsList.innerHTML = `
@@ -407,6 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
+    if (backingVocalsSelect) {
+        backingVocalsSelect.addEventListener('change', () => {
+            updateLyricsFromEditor();
+        });
+    }
+
     function attachCreditRowListeners(row) {
         row.querySelector('.credits-prefix').addEventListener('change', () => {
             drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
@@ -566,11 +574,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const lines = lrcText.split('\n');
         const parsed = [];
         const timeReg = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
+        const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
 
         lines.forEach(line => {
             let match;
             const lineLyrics = line.replace(timeReg, '').trim();
             if (!lineLyrics) return;
+
+            const isBacking = lineLyrics.startsWith('(') && lineLyrics.endsWith(')');
+            if (backingVocalsMode === 'hide' && isBacking) return;
 
             // Reset regex index
             timeReg.lastIndex = 0;
@@ -580,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const milliseconds = parseInt(match[3]) * (match[3].length === 2 ? 10 : 1);
 
                 const time = minutes * 60 + seconds + milliseconds / 1000;
-                parsed.push({ time, text: lineLyrics });
+                parsed.push({ time, text: lineLyrics, isBacking });
             }
         });
 
@@ -592,6 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const xmlDoc = parser.parseFromString(ttmlText, "text/xml");
         const paragraphs = xmlDoc.getElementsByTagName('p');
         const parsed = [];
+        const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
 
         function parseTime(timeStr) {
             if (!timeStr) return 0;
@@ -601,11 +614,30 @@ document.addEventListener('DOMContentLoaded', () => {
             return parseFloat(timeStr);
         }
 
+        function checkIfBgElement(el) {
+            if (!el || typeof el.getAttribute !== 'function') return false;
+            const role = el.getAttribute('ttm:role') || el.getAttribute('role');
+            if (role === 'x-bg' || role === 'background' || role === 'backing') {
+                return true;
+            }
+            const className = el.className || '';
+            if (/bg|background|backing|vocal/i.test(className)) {
+                return true;
+            }
+            const text = el.textContent.trim();
+            if (text.startsWith('(') && text.endsWith(')')) {
+                return true;
+            }
+            return false;
+        }
+
         for (let i = 0; i < paragraphs.length; i++) {
             const p = paragraphs[i];
             const begin = p.getAttribute('begin');
             if (begin) {
                 const time = parseTime(begin);
+                const isLineBacking = checkIfBgElement(p);
+                if (backingVocalsMode === 'hide' && isLineBacking) continue;
                 
                 const spans = p.getElementsByTagName('span');
                 const words = [];
@@ -613,25 +645,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (spans.length > 0) {
                     let currentTimeForWord = time;
-                    Array.from(p.childNodes).forEach(node => {
-                        if (node.nodeType === 3) {
-                            const t = node.textContent;
-                            if (t) {
-                                words.push({ text: t, time: currentTimeForWord, endTime: currentTimeForWord + 0.1 });
-                            }
-                        } else if (node.nodeType === 1 && node.tagName.toLowerCase() === 'span') {
-                            const spanBegin = node.getAttribute('begin');
-                            const spanEnd = node.getAttribute('end');
-                            const wTime = spanBegin ? parseTime(spanBegin) : time;
-                            const wEndTime = spanEnd ? parseTime(spanEnd) : wTime + 1;
-                            currentTimeForWord = wTime;
-                            
-                            const wText = node.textContent;
-                            if (wText) {
-                                words.push({ text: wText, time: wTime, endTime: wEndTime });
+                    const leafSpans = [];
+                    function collectSpans(node) {
+                        if (node.nodeType === 1) {
+                            const hasChildElements = Array.from(node.childNodes).some(n => n.nodeType === 1);
+                            if (node.tagName.toLowerCase() === 'span' && !hasChildElements) {
+                                leafSpans.push(node);
+                            } else {
+                                Array.from(node.childNodes).forEach(collectSpans);
                             }
                         }
+                    }
+                    collectSpans(p);
+
+                    leafSpans.forEach(span => {
+                        const spanBegin = span.getAttribute('begin');
+                        const spanEnd = span.getAttribute('end');
+                        const wTime = spanBegin ? parseTime(spanBegin) : time;
+                        const wEndTime = spanEnd ? parseTime(spanEnd) : wTime + 1;
+                        
+                        const isBacking = checkIfBgElement(span) || checkIfBgElement(span.parentElement) || isLineBacking;
+                        
+                        const wText = span.textContent.trim().replace(/\s+/g, ' ');
+                        if (wText !== '') {
+                            words.push({ text: wText, time: wTime, endTime: wEndTime, isBacking });
+                        }
                     });
+
+                    // Detect parenthetical backing vocals in the words sequence (second pass)
+                    let insideParentheses = false;
+                    for (let j = 0; j < words.length; j++) {
+                        const w = words[j];
+                        if (w.text.includes('(')) {
+                            insideParentheses = true;
+                        }
+                        if (insideParentheses) {
+                            w.isBacking = true;
+                        }
+                        if (w.text.includes(')')) {
+                            insideParentheses = false;
+                        }
+                    }
+
+                    if (backingVocalsMode === 'hide') {
+                        const filteredWords = words.filter(w => !w.isBacking);
+                        words.length = 0;
+                        words.push(...filteredWords);
+                    }
 
                     // Auto-insert spaces between words if they are missing
                     for (let j = 0; j < words.length - 1; j++) {
@@ -651,7 +711,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (textContent.trim()) {
-                    parsed.push({ time, text: textContent.trim(), words: words.length > 0 ? words : null });
+                    parsed.push({ 
+                        time, 
+                        text: textContent.trim(), 
+                        words: words.length > 0 ? words : null,
+                        isBacking: isLineBacking || (words.length > 0 && words.every(w => w.isBacking))
+                    });
                 }
             }
         }
@@ -781,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (albumImage) {
             const size = 600;
             const x = 200;
-            const y = (canvas.height - size) / 2;
+            const y = 180; // Shifted up slightly to give title & credits more room below
 
             ctx.save();
             // Shadow
@@ -799,6 +864,31 @@ document.addEventListener('DOMContentLoaded', () => {
         // Draw Song Title and Artist Name (Left Side)
         const songTitle = songTitleInput.value.trim();
         const songArtist = songArtistInput.value.trim();
+        // Calculate total height of metadata block to prevent it going off screen
+        const creditRows = document.querySelectorAll('#creditsList .credits-row');
+        let activeCreditsCount = 0;
+        for (let i = 0; i < creditRows.length; i++) {
+            if (creditRows[i].querySelector('.credits-name').value.trim()) {
+                activeCreditsCount++;
+            }
+        }
+
+        let totalMetadataHeight = 0;
+        if (songTitle) totalMetadataHeight += 55;
+        if (songArtist) totalMetadataHeight += 45;
+        if ((songTitle || songArtist) && activeCreditsCount > 0) {
+            totalMetadataHeight += 10; // gap before credits
+        }
+        totalMetadataHeight += activeCreditsCount * 34;
+
+        let textY;
+        if (albumImage) {
+            // Align to bottom area, growing upwards if needed (bottom boundary at canvas.height - 50)
+            textY = Math.min(830, canvas.height - 50 - totalMetadataHeight);
+        } else {
+            // Centered layout if there is no album cover
+            textY = canvas.height / 2 - totalMetadataHeight / 2;
+        }
 
         if (songTitle || songArtist) {
             ctx.save();
@@ -806,11 +896,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.textBaseline = 'top';
             ctx.shadowColor = 'rgba(0,0,0,0.6)';
             ctx.shadowBlur = 10;
-
-            let textY = 890;
-            if (!albumImage) {
-                textY = canvas.height / 2 - 50;
-            }
 
             if (songTitle) {
                 ctx.font = `800 42px "${currentFont}", sans-serif`;
@@ -823,6 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.font = `600 28px "${currentFont}", sans-serif`;
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
                 ctx.fillText(songArtist, 200, textY, 600);
+                textY += 45;
             }
 
             ctx.restore();
@@ -836,15 +922,15 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
-        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.0.2`, 40, 40);
+        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.1.0`, 40, 40);
         ctx.restore();
 
-        // Draw Custom Credits (multiple rows grow upwards from the bottom left)
-        const creditRows = document.querySelectorAll('#creditsList .credits-row');
-        let creditsY = canvas.height - 40;
-        
-        // Loop backwards so the first credit line added is at the very bottom
-        for (let i = creditRows.length - 1; i >= 0; i--) {
+        // Draw Custom Credits (multiple rows flowing down from the artist)
+        if ((songTitle || songArtist) && activeCreditsCount > 0) {
+            textY += 10; // extra gap before credits
+        }
+
+        for (let i = 0; i < creditRows.length; i++) {
             const row = creditRows[i];
             const prefix = row.querySelector('.credits-prefix').value;
             const name = row.querySelector('.credits-name').value.trim();
@@ -852,15 +938,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (name) {
                 ctx.save();
                 ctx.textAlign = 'left';
-                ctx.textBaseline = 'bottom';
-                ctx.font = `600 30px "${currentFont}", sans-serif`;
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.textBaseline = 'top';
+                ctx.font = `600 24px "${currentFont}", sans-serif`;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                 ctx.shadowColor = 'rgba(0,0,0,0.8)';
                 ctx.shadowBlur = 10;
-                ctx.fillText(`${prefix} ${name}`, 40, creditsY);
+                ctx.fillText(`${prefix} ${name}`, 200, textY, 600);
                 ctx.restore();
                 
-                creditsY -= 42; // offset upward for the next credit line
+                textY += 34; // offset downward for the next credit line
             }
         }
 
@@ -936,12 +1022,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const centerY = canvas.height / 2;
 
         function getWrappedLines(context, lyric, maxWidth, font) {
-            if (lyric.cachedLines && lyric.cachedFont === font && lyric.cachedMaxWidth === maxWidth) {
+            const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
+            if (lyric.cachedLines && lyric.cachedFont === font && lyric.cachedMaxWidth === maxWidth && lyric.cachedBackingMode === backingVocalsMode) {
                 return lyric.cachedLines;
             }
 
             context.save();
-            context.font = font;
 
             let items = [];
             if (lyric.words && lyric.words.length > 0) {
@@ -952,140 +1038,237 @@ document.addEventListener('DOMContentLoaded', () => {
                     items.push({
                         text: textWords[i] + (i < textWords.length - 1 ? ' ' : ''),
                         time: lyric.time,
-                        endTime: lyric.time + 1
+                        endTime: lyric.time + 1,
+                        isBacking: lyric.isBacking
                     });
                 }
             }
 
-            const lines = [];
-            let currentLine = [];
-            let currentLineWidth = 0;
-            const spaceWidth = context.measureText(' ').width;
-
-            for (let n = 0; n < items.length; n++) {
-                const item = items[n];
-                let text = item.text;
-                let trailingSpaces = 0;
-                let leadingSpaces = 0;
-                
-                while(text.endsWith(' ') || text.endsWith('\u00A0') || text.endsWith('\t') || text.endsWith('\n') || text.endsWith('\r')) {
-                    trailingSpaces++;
-                    text = text.slice(0, -1);
+            // Detect parenthetical backing vocals in the items sequence (for both TTML and LRC!)
+            let insideParentheses = false;
+            for (let j = 0; j < items.length; j++) {
+                const item = items[j];
+                if (item.text.includes('(')) {
+                    insideParentheses = true;
                 }
-                while(text.startsWith(' ') || text.startsWith('\u00A0') || text.startsWith('\t') || text.startsWith('\n') || text.startsWith('\r')) {
-                    leadingSpaces++;
-                    text = text.slice(1);
+                if (insideParentheses) {
+                    item.isBacking = true;
                 }
-                
-                const cleanWidth = text.length > 0 ? context.measureText(text).width : 0;
-                const itemWidth = cleanWidth + (leadingSpaces + trailingSpaces) * spaceWidth;
+                if (item.text.includes(')')) {
+                    insideParentheses = false;
+                }
+            }
 
-                item.renderText = text;
-                item.leadingSpaces = leadingSpaces;
-                item.trailingSpaces = trailingSpaces;
-                item.cleanWidth = cleanWidth;
+            if (backingVocalsMode === 'hide') {
+                items = items.filter(item => !item.isBacking);
+            }
 
-                if (currentLineWidth + itemWidth > maxWidth && currentLine.length > 0) {
-                    lines.push({ width: currentLineWidth, items: currentLine });
-                    currentLine = [item];
-                    currentLineWidth = itemWidth;
+            // Split items into main and backing
+            const mainItems = [];
+            const backingItems = [];
+            for (let j = 0; j < items.length; j++) {
+                const item = items[j];
+                if (item.isBacking) {
+                    backingItems.push(item);
                 } else {
-                    currentLine.push(item);
-                    currentLineWidth += itemWidth;
+                    mainItems.push(item);
                 }
             }
-            if (currentLine.length > 0) {
-                lines.push({ width: currentLineWidth, items: currentLine });
+
+            const defaultFont = font;
+            const backingFont = font.includes('bold') 
+                ? font.replace('bold', '500').replace('60px', '44px')
+                : font.replace('60px', '44px');
+
+            const useBackingStyle = (backingVocalsMode === 'styled');
+            const activeBackingFont = useBackingStyle ? backingFont : defaultFont;
+
+            function wrapItems(itemsList, activeFont) {
+                const lines = [];
+                let currentLine = [];
+                let currentLineWidth = 0;
+
+                for (let n = 0; n < itemsList.length; n++) {
+                    const item = itemsList[n];
+                    context.font = activeFont;
+                    const spaceWidth = context.measureText(' ').width;
+
+                    let text = item.text;
+                    let trailingSpaces = 0;
+                    let leadingSpaces = 0;
+                    
+                    while(text.endsWith(' ') || text.endsWith('\u00A0') || text.endsWith('\t') || text.endsWith('\n') || text.endsWith('\r')) {
+                        trailingSpaces++;
+                        text = text.slice(0, -1);
+                    }
+                    while(text.startsWith(' ') || text.startsWith('\u00A0') || text.startsWith('\t') || text.startsWith('\n') || text.startsWith('\r')) {
+                        leadingSpaces++;
+                        text = text.slice(1);
+                    }
+                    
+                    const cleanWidth = text.length > 0 ? context.measureText(text).width : 0;
+                    const itemWidth = cleanWidth + (leadingSpaces + trailingSpaces) * spaceWidth;
+
+                    item.renderText = text;
+                    item.leadingSpaces = leadingSpaces;
+                    item.trailingSpaces = trailingSpaces;
+                    item.cleanWidth = cleanWidth;
+
+                    if (currentLineWidth + itemWidth > maxWidth && currentLine.length > 0) {
+                        lines.push({ width: currentLineWidth, items: currentLine });
+                        currentLine = [item];
+                        currentLineWidth = itemWidth;
+                    } else {
+                        currentLine.push(item);
+                        currentLineWidth += itemWidth;
+                    }
+                }
+                if (currentLine.length > 0) {
+                    lines.push({ width: currentLineWidth, items: currentLine });
+                }
+                return lines;
             }
+
+            const mainLines = wrapItems(mainItems, defaultFont);
+            const backingLines = wrapItems(backingItems, activeBackingFont);
 
             context.restore();
-            lyric.cachedLines = lines;
+
+            const result = { mainLines, backingLines };
+            lyric.cachedLines = result;
             lyric.cachedFont = font;
             lyric.cachedMaxWidth = maxWidth;
-            return lines;
+            lyric.cachedBackingMode = backingVocalsMode;
+            return result;
         }
 
-        function drawWrappedLines(context, lyric, lines, x, y, lineHeight, isCurrent, currentTime, opacity) {
-            const startY = y - ((lines.length - 1) * lineHeight) / 2;
+        function drawWrappedLines(context, lyric, wrappedResult, x, y, isCurrent, currentTime, opacity) {
+            const defaultFont = `bold 60px "${currentFont}", sans-serif`;
+            const backingFont = defaultFont.includes('bold') 
+                ? defaultFont.replace('bold', '500').replace('60px', '44px')
+                : defaultFont.replace('60px', '44px');
+
+            const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
+            const useBackingStyle = (backingVocalsMode === 'styled');
             
-            if (lyric.words && lyric.words.length > 0) {
-                // TTML word-by-word drawing logic for karaoke highlighting
-                const spaceWidth = context.measureText(' ').width;
-                for (let i = 0; i < lines.length; i++) {
-                    let currentX = x;
-                    const line = lines[i];
-                    const lineY = startY + (i * lineHeight);
+            const mainLines = wrappedResult.mainLines;
+            const backingLines = wrappedResult.backingLines;
 
-                    for (let j = 0; j < line.items.length; j++) {
-                        const item = line.items[j];
-                        currentX += item.leadingSpaces * spaceWidth;
-                        
+            const mainLineHeight = 60 * 1.3;
+            const backingLineHeight = (useBackingStyle ? 44 : 60) * 1.3;
+            const gapBetween = (mainLines.length > 0 && backingLines.length > 0) ? 15 : 0;
+
+            const linesToDraw = [];
+            for (let i = 0; i < mainLines.length; i++) {
+                linesToDraw.push({
+                    line: mainLines[i],
+                    font: defaultFont,
+                    lineHeight: mainLineHeight,
+                    isBacking: false
+                });
+            }
+            for (let i = 0; i < backingLines.length; i++) {
+                linesToDraw.push({
+                    line: backingLines[i],
+                    font: useBackingStyle ? backingFont : defaultFont,
+                    lineHeight: backingLineHeight,
+                    isBacking: true
+                });
+            }
+
+            let totalHeight = 0;
+            for (let i = 0; i < linesToDraw.length; i++) {
+                totalHeight += linesToDraw[i].lineHeight;
+                if (i < linesToDraw.length - 1) {
+                    if (!linesToDraw[i].isBacking && linesToDraw[i+1].isBacking) {
+                        totalHeight += gapBetween;
+                    }
+                }
+            }
+
+            let currentY = y - totalHeight / 2;
+
+            for (let i = 0; i < linesToDraw.length; i++) {
+                const drawItem = linesToDraw[i];
+                const line = drawItem.line;
+                const lineY = currentY + drawItem.lineHeight / 2;
+                
+                let currentX = x;
+                context.font = drawItem.font;
+
+                for (let j = 0; j < line.items.length; j++) {
+                    const item = line.items[j];
+                    const isStyledBacking = item.isBacking && useBackingStyle;
+                    const spaceWidth = context.measureText(' ').width;
+                    currentX += item.leadingSpaces * spaceWidth;
+                    
+                    if (item.renderText) {
                         if (isCurrent) {
-                            let progress = 0;
-                            const duration = item.endTime - item.time;
-                            if (currentTime >= item.endTime || duration <= 0) {
-                                progress = 1;
-                            } else if (currentTime > item.time) {
-                                progress = (currentTime - item.time) / duration;
-                            }
+                            if (lyric.words && lyric.words.length > 0) {
+                                // TTML karaoke highlighting
+                                let progress = 0;
+                                const duration = item.endTime - item.time;
+                                if (currentTime >= item.endTime || duration <= 0) {
+                                    progress = 1;
+                                } else if (currentTime > item.time) {
+                                    progress = (currentTime - item.time) / duration;
+                                }
 
-                            if (item.renderText) {
                                 // Base inactive text
-                                context.fillStyle = `rgba(203, 213, 225, 0.5)`;
+                                context.fillStyle = isStyledBacking
+                                    ? `rgba(203, 213, 225, 0.25)`
+                                    : `rgba(203, 213, 225, 0.5)`;
                                 context.shadowColor = 'transparent';
                                 context.shadowBlur = 0;
                                 context.fillText(item.renderText, currentX, lineY);
 
-                                // Overlay active text clipped by progress
+                                // Active highlighted text
                                 if (progress > 0) {
                                     context.save();
                                     context.beginPath();
-                                    context.rect(currentX, lineY - lineHeight, item.cleanWidth * progress, lineHeight * 2);
+                                    context.rect(currentX, lineY - drawItem.lineHeight, item.cleanWidth * progress, drawItem.lineHeight * 2);
                                     context.clip();
                                     
+                                    context.font = drawItem.font;
                                     context.fillStyle = currentLyricColor;
+                                    if (isStyledBacking) {
+                                        context.globalAlpha = 0.6; // dimmer active state for backing
+                                    }
                                     context.shadowColor = activeGlowColor;
-                                    context.shadowBlur = 20 * opacity;
+                                    context.shadowBlur = (isStyledBacking ? 8 : 20) * opacity;
                                     context.fillText(item.renderText, currentX, lineY);
                                     context.restore();
                                 }
-                                currentX += item.cleanWidth;
+                            } else {
+                                // LRC active line (fully highlighted)
+                                context.fillStyle = currentLyricColor;
+                                if (isStyledBacking) {
+                                    context.globalAlpha = 0.6; // dimmer active state for backing
+                                }
+                                context.shadowColor = activeGlowColor;
+                                context.shadowBlur = (isStyledBacking ? 8 : 20) * opacity;
+                                context.fillText(item.renderText, currentX, lineY);
+                                context.globalAlpha = 1.0;
                             }
                         } else {
-                            if (item.renderText) {
-                                context.fillStyle = `rgba(203, 213, 225, ${opacity * 0.5})`;
-                                context.shadowColor = 'transparent';
-                                context.shadowBlur = 0;
-                                context.fillText(item.renderText, currentX, lineY);
-                                currentX += item.cleanWidth;
-                            }
+                            // Inactive line (normal or backing)
+                            context.fillStyle = isStyledBacking
+                                ? `rgba(203, 213, 225, ${opacity * 0.25})`
+                                : `rgba(203, 213, 225, ${opacity * 0.5})`;
+                            context.shadowColor = 'transparent';
+                            context.shadowBlur = 0;
+                            context.fillText(item.renderText, currentX, lineY);
                         }
-                        currentX += item.trailingSpaces * spaceWidth;
+                        currentX += item.cleanWidth;
                     }
+                    currentX += item.trailingSpaces * spaceWidth;
                 }
-            } else {
-                // LRC line-by-line drawing logic using native text rendering
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i];
-                    const lineY = startY + (i * lineHeight);
-                    
-                    // Reconstruct line text with exact spacing preserved
-                    const lineText = line.items.map(item => {
-                        const leading = ' '.repeat(item.leadingSpaces);
-                        const trailing = ' '.repeat(item.trailingSpaces);
-                        return leading + item.renderText + trailing;
-                    }).join('');
 
-                    if (isCurrent) {
-                        context.fillStyle = currentLyricColor;
-                        context.shadowColor = activeGlowColor;
-                        context.shadowBlur = 20 * opacity;
-                    } else {
-                        context.fillStyle = `rgba(203, 213, 225, ${opacity * 0.5})`;
-                        context.shadowColor = 'transparent';
-                        context.shadowBlur = 0;
+                currentY += drawItem.lineHeight;
+                if (i < linesToDraw.length - 1) {
+                    if (!linesToDraw[i].isBacking && linesToDraw[i+1].isBacking) {
+                        currentY += gapBetween;
                     }
-                    context.fillText(lineText, x, lineY);
                 }
             }
         }
@@ -1098,17 +1281,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Calculate height and wrap lines for all lyrics
         for (let j = 0; j < lyrics.length; j++) {
             const lyric = lyrics[j];
-            const distance = j - smoothedIndex;
-            const absDistance = Math.abs(distance);
-            const scale = Math.max(0.7, 1 - absDistance * 0.1);
-            const fontSize = (j === currentIndex) ? 70 : 50 * scale;
-            const font = (j === currentIndex)
-                ? `bold ${Math.round(fontSize)}px "${currentFont}", sans-serif`
-                : `600 ${Math.round(fontSize)}px "${currentFont}", sans-serif`;
             
-            const lines = getWrappedLines(ctx, lyric, 900, font);
-            wrappedLinesArr[j] = lines;
-            heights[j] = lines.length * fontSize * 1.3;
+            // Wrap lines using a completely static font size (60px) to prevent layout/wrap jitter
+            const font = `bold 60px "${currentFont}", sans-serif`;
+            
+            const wrapped = getWrappedLines(ctx, lyric, 900, font);
+            wrappedLinesArr[j] = wrapped;
+
+            const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
+            const useBackingStyle = (backingVocalsMode === 'styled');
+            const mainLineHeight = 60 * 1.3;
+            const backingLineHeight = (useBackingStyle ? 44 : 60) * 1.3;
+            const gapBetween = (wrapped.mainLines.length > 0 && wrapped.backingLines.length > 0) ? 15 : 0;
+
+            heights[j] = wrapped.mainLines.length * mainLineHeight + wrapped.backingLines.length * backingLineHeight + gapBetween;
         }
 
         // 2. Sequential layout starting at y = 0
@@ -1137,11 +1323,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 5. Draw visible lyrics
-        for (let i = Math.max(0, currentIndex - 3); i <= Math.min(lyrics.length - 1, currentIndex + 3); i++) {
+        const drawRange = 4;
+        const smoothCurrentIndex = Math.round(smoothedIndex);
+        for (let i = Math.max(0, smoothCurrentIndex - drawRange); i <= Math.min(lyrics.length - 1, smoothCurrentIndex + drawRange); i++) {
             const lyric = lyrics[i];
             const distance = i - smoothedIndex;
             const absDistance = Math.abs(distance);
-            const opacity = Math.max(0, 1 - absDistance * 0.35);
+            const opacity = Math.max(0, 1 - absDistance * 0.25);
             const scale = Math.max(0.7, 1 - absDistance * 0.1);
             const yPos = yPositions[i];
 
@@ -1150,21 +1338,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.translate(lyricX, yPos);
                 ctx.scale(scale, scale);
 
-                let fontSize;
-                if (i === currentIndex) {
-                    fontSize = 70;
-                    ctx.font = `bold ${fontSize}px "${currentFont}", sans-serif`;
-                    ctx.fillStyle = currentLyricColor;
-                    ctx.shadowColor = activeGlowColor;
-                    ctx.shadowBlur = 20 * opacity;
-                } else {
-                    fontSize = 50;
-                    ctx.font = `600 ${fontSize}px "${currentFont}", sans-serif`;
-                    ctx.fillStyle = `rgba(203, 213, 225, ${opacity * 0.5})`;
-                    ctx.shadowBlur = 0;
-                }
+                // Use the exact same static 60px font size so scaling is clean and matches wrapping
+                ctx.font = `bold 60px "${currentFont}", sans-serif`;
+                
+                const weight = Math.max(0, 1 - absDistance);
+                ctx.shadowBlur = 20 * opacity * weight;
+                ctx.shadowColor = activeGlowColor;
 
-                drawWrappedLines(ctx, lyric, wrappedLinesArr[i], 0, 0, fontSize * 1.3, i === currentIndex, currentTime, opacity);
+                drawWrappedLines(ctx, lyric, wrappedLinesArr[i], 0, 0, i === currentIndex, currentTime, opacity);
                 ctx.restore();
             }
         }

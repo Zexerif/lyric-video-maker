@@ -11,7 +11,7 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&family=Lexend:wght@400;600;800&family=Bebas+Neue&family=Montserrat:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@700&family=Permanent+Marker&family=Pacifico&family=Comic+Neue:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/index.css">
-    <link rel="stylesheet" href="styles.css?v=1.0.32">
+    <link rel="stylesheet" href="styles.css?v=1.1.0">
 </head>
 
 <body>
@@ -173,6 +173,15 @@
                             </div>
                             <input type="color" id="glowColor" value="#6366f1">
                         </div>
+                        <div class="input-group" style="display: flex; flex-direction: column; align-items: flex-start; height: 100%; margin-top: 1.5rem;">
+                            <label for="backingVocalsSelect" style="font-weight: 600; color: var(--text-muted); width: 100%;">Backing Vocals</label>
+                            <select id="backingVocalsSelect" style="width: 100%;">
+                                <option value="styled">Show (Apple Music Style)</option>
+                                <option value="normal">Show (Normal Style)</option>
+                                <option value="hide">Hide / Remove</option>
+                            </select>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: block; line-height: 1.2;">(Only if the lyric file has backing vocals)</span>
+                        </div>
                     </div>
                 </div>
 
@@ -310,7 +319,7 @@
             </p>
             <p class="github-link"><a href="https://github.com/Zexerif/lyric-video-maker" target="_blank"
                     rel="noopener">View on GitHub</a></p>
-            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v1.0.3</p>
+            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v1.1.0</p>
         </footer>
     </div>
 
@@ -377,7 +386,7 @@
         <span style="font-family: 'Comic Neue';">a</span>
     </div>
 
-    <script src="app.js?v=1.0.32"></script>
+    <script src="app.js?v=1.1.0"></script>
 </body>
 
 </html>
