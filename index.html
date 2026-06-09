@@ -182,6 +182,7 @@
                             </select>
                             <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: block; line-height: 1.2;">(Only if the lyric file has backing vocals)</span>
                         </div>
+
                         <div class="input-group" style="display: flex; flex-direction: column; align-items: flex-start; height: 100%; margin-top: 1.5rem;">
                             <label for="bpmVisualizerSelect" style="font-weight: 600; color: var(--text-muted); width: 100%;">BPM Visualizer</label>
                             <select id="bpmVisualizerSelect" style="width: 100%;">
@@ -198,6 +199,15 @@
 
                 <!-- Tab 4: Lyric Editor -->
                 <div class="tab-content" id="tab-editor">
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <label for="animatePlainLyricsSelect" style="font-weight: 600; color: var(--text-muted); width: 100%;">Karaoke Animation (Word Highlight)</label>
+                        <select id="animatePlainLyricsSelect" style="width: 100%;">
+                            <option value="default">Use File Default (Respect file timings)</option>
+                            <option value="on">Force Word-by-Word (Karaoke)</option>
+                            <option value="off">Force Line-by-Line (Standard)</option>
+                        </select>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: block; line-height: 1.2;">(Applies word/character-level highlight animations to lyrics)</span>
+                    </div>
                     <div class="input-group" style="height: 100%;">
                         <label for="lrcEditor">Lyric Editor (Live Edit)</label>
                         <textarea id="lrcEditor" placeholder="Upload an .lrc/.ttml file or type lyrics here..." style="min-height: 250px;"></textarea>

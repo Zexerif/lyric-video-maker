@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const songBpmInput = document.getElementById('songBpmInput');
     const backingVocalsSelect = document.getElementById('backingVocalsSelect');
     const bpmVisualizerSelect = document.getElementById('bpmVisualizerSelect');
+    const animatePlainLyricsSelect = document.getElementById('animatePlainLyricsSelect');
 
     // Helper to ensure extracted album colors are adjusted properly for text or elements
     function adjustColorForReadability(r, g, b, minLightness = 0.7, maxLightness = 1.0, minSaturation = 0.5) {
@@ -130,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         glowColorInput.disabled = false;
         if (backingVocalsSelect) backingVocalsSelect.value = 'styled';
         if (bpmVisualizerSelect) bpmVisualizerSelect.value = 'ring-contract';
+        if (animatePlainLyricsSelect) animatePlainLyricsSelect.value = 'default';
 
         // Reset credits to default single empty row
         creditsList.innerHTML = `
@@ -181,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
             statusMessage.textContent = 'Audio loaded successfully.';
+            updateLyricsFromEditor();
             updateButtons();
         } catch (err) {
             statusMessage.textContent = 'Error decoding audio file.';
@@ -207,6 +210,35 @@ document.addEventListener('DOMContentLoaded', () => {
             if (lyrics[0].time > 0) {
                 lyrics.unshift({ time: 0, text: '• • •' });
             }
+
+            // Calculate duration and auto-generate word-by-word highlights if missing
+            const shouldAnimatePlain = animatePlainLyricsSelect && animatePlainLyricsSelect.value === 'on';
+            for (let i = 0; i < lyrics.length; i++) {
+                const current = lyrics[i];
+                const next = lyrics[i+1];
+                if (next) {
+                    current.duration = next.time - current.time;
+                } else if (audioBuffer) {
+                    current.duration = Math.max(3.0, audioBuffer.duration - current.time);
+                } else {
+                    current.duration = 5.0;
+                }
+
+                if (!current.words && shouldAnimatePlain) {
+                    const tokens = tokenizeText(current.text);
+                    const partDuration = current.duration / tokens.length;
+                    current.words = [];
+                    for (let k = 0; k < tokens.length; k++) {
+                        current.words.push({
+                            text: tokens[k],
+                            time: current.time + k * partDuration,
+                            endTime: current.time + (k + 1) * partDuration,
+                            isBacking: current.isBacking
+                        });
+                    }
+                }
+            }
+
             statusMessage.textContent = `Loaded ${lyrics.length} lyric lines.`;
         } else {
             statusMessage.textContent = 'Enter or upload lyrics to begin.';
@@ -420,6 +452,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (backingVocalsSelect) {
         backingVocalsSelect.addEventListener('change', () => {
+            updateLyricsFromEditor();
+        });
+    }
+
+    if (animatePlainLyricsSelect) {
+        animatePlainLyricsSelect.addEventListener('change', () => {
             updateLyricsFromEditor();
         });
     }
@@ -660,11 +698,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (let i = 0; i < paragraphs.length; i++) {
             const p = paragraphs[i];
+            const isLineBacking = checkIfBgElement(p);
+            if (backingVocalsMode === 'hide' && isLineBacking) continue;
+
+            const rawText = p.textContent.trim();
+            const lrcTimeReg = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
+            const lrcTimes = [];
+            let match;
+            
+            while ((match = lrcTimeReg.exec(rawText)) !== null) {
+                const minutes = parseInt(match[1]);
+                const seconds = parseInt(match[2]);
+                const milliseconds = parseInt(match[3]) * (match[3].length === 2 ? 10 : 1);
+                const parsedTime = minutes * 60 + seconds + milliseconds / 1000;
+                lrcTimes.push(parsedTime);
+            }
+
+            if (lrcTimes.length > 0) {
+                const cleanText = rawText.replace(lrcTimeReg, '').trim();
+                if (cleanText) {
+                    lrcTimes.forEach(parsedTime => {
+                        parsed.push({
+                            time: parsedTime,
+                            text: cleanText,
+                            words: null,
+                            isBacking: isLineBacking
+                        });
+                    });
+                }
+                continue;
+            }
+
             const begin = p.getAttribute('begin');
             if (begin) {
                 const time = parseTime(begin);
-                const isLineBacking = checkIfBgElement(p);
-                if (backingVocalsMode === 'hide' && isLineBacking) continue;
                 
                 const spans = p.getElementsByTagName('span');
                 const words = [];
@@ -1191,17 +1258,21 @@ document.addEventListener('DOMContentLoaded', () => {
             context.save();
 
             let items = [];
-            if (lyric.words && lyric.words.length > 0) {
+            const useWordTimings = !animatePlainLyricsSelect || animatePlainLyricsSelect.value !== 'off';
+            if (lyric.words && lyric.words.length > 0 && useWordTimings) {
+                const isWordByWord = lyric.words.length > 1;
                 for (let i = 0; i < lyric.words.length; i++) {
                     const w = lyric.words[i];
                     const rawText = w.text;
-                    const parts = tokenizeText(rawText);
+                    const parts = isWordByWord ? rawText.trim().split(/\s+/) : tokenizeText(rawText);
                     if (parts.length > 0) {
                         const duration = w.endTime - w.time;
                         const partDuration = duration / parts.length;
+                        const endsWithSpace = rawText.endsWith(' ') || rawText.endsWith('\u00A0');
                         for (let k = 0; k < parts.length; k++) {
+                            const isLast = (k === parts.length - 1);
                             items.push({
-                                text: parts[k],
+                                text: parts[k] + (isWordByWord && (!isLast || endsWithSpace) ? ' ' : ''),
                                 time: w.time + k * partDuration,
                                 endTime: w.time + (k + 1) * partDuration,
                                 isBacking: w.isBacking
