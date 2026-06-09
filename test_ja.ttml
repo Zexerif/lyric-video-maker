@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tt xml:lang="ja" xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata">
+  <body>
+    <div>
+      <p begin="00:00.00" end="00:04.00">
+        <span begin="00:00.00" end="00:00.50">君</span>
+        <span begin="00:00.50" end="00:01.00">の</span>
+        <span begin="00:01.00" end="00:01.50">名</span>
+        <span begin="00:01.50" end="00:02.00">は</span>
+        <span begin="00:02.00" end="00:03.00">希望</span>
+      </p>
+      <p begin="00:04.00" end="00:08.00">
+        <span begin="00:04.00" end="00:04.50">Hello</span>
+        <span begin="00:04.50" end="00:05.00">世界</span>
+        <span begin="00:05.00" end="00:05.50">！</span>
+        <span begin="00:05.50" end="00:06.00">これ</span>
+        <span begin="00:06.00" end="00:06.50">は</span>
+        <span begin="00:06.50" end="00:07.00">テスト</span>
+        <span begin="00:07.00" end="00:07.50">です。</span>
+      </p>
+    </div>
+  </body>
+</tt>

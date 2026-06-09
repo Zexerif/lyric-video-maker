@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const c0Text = adjustColorForReadability(c0Raw.r, c0Raw.g, c0Raw.b, 0.75, 0.95, 0.6);
                 const c1Text = adjustColorForReadability(c1Raw.r, c1Raw.g, c1Raw.b, 0.75, 0.95, 0.6);
                 
-                // Adjust colors for UI elements/buttons (vibrant, rich, lightness clamped between 25% and 55% for premium depth)
+                // Adjust colors for UI elements/buttons (vibrant, rich, lightness clamped between 25% and 55% for better visibility)
                 const c0Element = adjustColorForReadability(c0Raw.r, c0Raw.g, c0Raw.b, 0.25, 0.55, 0.6);
                 const c1Element = adjustColorForReadability(c1Raw.r, c1Raw.g, c1Raw.b, 0.25, 0.55, 0.6);
                 
@@ -585,6 +585,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const CJK_REGEX = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf\uac00-\ud7a3]/;
+
+    function tokenizeText(text) {
+        const regex = /([\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf\uac00-\ud7a3]\s*)|([^\s\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf\uac00-\ud7a3]+\s*)|(\s+)/g;
+        const tokens = [];
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            tokens.push(match[0]);
+        }
+        return tokens;
+    }
+
     function parseLrc(lrcText) {
         const lines = lrcText.split('\n');
         const parsed = [];
@@ -716,7 +728,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             !currentWord.text.endsWith('\u00A0') &&
                             !nextWord.text.startsWith(' ') && 
                             !nextWord.text.startsWith('\u00A0') &&
-                            !/^[.,!?\]}'")]/.test(nextWord.text)) {
+                            !/^[.,!?\]}'")]/.test(nextWord.text) &&
+                            !CJK_REGEX.test(currentWord.text) &&
+                            !CJK_REGEX.test(nextWord.text)) {
                             currentWord.text += ' ';
                         }
                     }
@@ -1181,29 +1195,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (let i = 0; i < lyric.words.length; i++) {
                     const w = lyric.words[i];
                     const rawText = w.text;
-                    const parts = rawText.trim().split(/\s+/);
-                    if (parts.length > 1) {
+                    const parts = tokenizeText(rawText);
+                    if (parts.length > 0) {
                         const duration = w.endTime - w.time;
                         const partDuration = duration / parts.length;
-                        const endsWithSpace = rawText.endsWith(' ') || rawText.endsWith('\u00A0');
                         for (let k = 0; k < parts.length; k++) {
-                            const isLast = (k === parts.length - 1);
                             items.push({
-                                text: parts[k] + (!isLast || endsWithSpace ? ' ' : ''),
+                                text: parts[k],
                                 time: w.time + k * partDuration,
                                 endTime: w.time + (k + 1) * partDuration,
                                 isBacking: w.isBacking
                             });
                         }
-                    } else {
-                        items.push({ ...w });
                     }
                 }
             } else {
-                const textWords = lyric.text.split(' ');
-                for (let i = 0; i < textWords.length; i++) {
+                const tokens = tokenizeText(lyric.text);
+                for (let i = 0; i < tokens.length; i++) {
                     items.push({
-                        text: textWords[i] + (i < textWords.length - 1 ? ' ' : ''),
+                        text: tokens[i],
                         time: lyric.time,
                         endTime: lyric.time + 1,
                         isBacking: lyric.isBacking

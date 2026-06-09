@@ -599,7 +599,7 @@ footer {
     width: 100vw;
     height: 100vh;
     background: rgba(10, 11, 18, 0.85); /* Slightly darker and richer */
-    backdrop-filter: blur(20px); /* Deeper blur for premium feel */
+    backdrop-filter: blur(20px); /* Deeper blur for better readability */
     -webkit-backdrop-filter: blur(20px);
     z-index: 10000;
     display: flex;

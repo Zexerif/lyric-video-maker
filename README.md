@@ -1,10 +1,10 @@
 # 🎵 Lyric Video Maker
 
-> Turn your audio and lyrics into a stunning visual experience in seconds—right inside your browser. 🚀
+> Create lyric videos from your audio and lyrics files directly in your browser.
 
 > https://zexerif.github.io/lyric-video-maker/
 
-**Lyric Video Maker** is a premium, client-side web application designed to generate beautiful lyric videos from synchronized lyrics (`.lrc` or word-by-word `.ttml` files) and audio tracks. With customizable visuals, smooth animations, and zero server-side rendering, you can generate stunning music videos instantly.
+**Lyric Video Maker** is a browser-based tool to generate lyric videos from synchronized lyrics (`.lrc` or word-by-word `.ttml` files) and audio tracks. It runs entirely on the client side, letting you customize fonts, colors, and background styles, and render the final video directly in your browser.
 
 ---
 
@@ -16,15 +16,15 @@
 
 ## ✨ Features
 
-- **Word-by-Word Sync Animation**: Seamless support for word-by-word karaoke-style animations using `.ttml` (with intelligent spacing adjustments).
-- **Dynamic Background Styles**:
-  - *Gradient Pulse*: A slowly shifting, vibrant visual gradient.
-  - *Lyric Reactive*: Visuals that shift in real-time alongside song progress.
-  - *Blurred Album Cover*: A sleek, modern frosted-glass blur styling.
-- **Customizable Typography & Colors**: Adjust fonts (Outfit, Inter, Roboto, Playfair), text colors, and custom glowing neon accents.
-- **Dynamic Watermark & Credits**: Add customizable bottom-left video credits, with a sleek watermark reference.
-- **Real-Time Live Lyric Editor**: Edit lyrics or adjust timestamps on the fly and watch the preview update instantly.
-- **100% Client-Side**: Audio and video processing happens entirely in your browser. Your files are never uploaded to any server.
+- **Word-by-Word Sync**: Support for word-by-word highlighting using `.ttml` files (with spacing adjustments).
+- **Background Styles**:
+  - *Gradient Pulse*: A slowly shifting color gradient.
+  - *Lyric Reactive*: Visuals that change color based on song progress.
+  - *Blurred Album Cover*: Frosted-glass style blur using the album cover.
+- **Customizable Fonts & Colors**: Choose from multiple fonts (Outfit, Inter, Roboto, Playfair), text colors, and glowing text accents.
+- **Credits & Watermark**: Add customizable song credits to the bottom-left of the video.
+- **Live Lyric Editor**: Edit lyrics or timestamps directly and preview the changes immediately.
+- **Local Rendering**: Audio and video rendering happens entirely in your browser. No files are uploaded to any server.
 
 ---
 
@@ -40,7 +40,7 @@
 1. **Upload Audio**: Drop or select your `.mp3` or `.wav` file.
 2. **Upload Lyrics**: Drop or select your `.lrc` or `.ttml` file. You can also paste lyrics directly into the Live Editor.
 3. **Customize Layout**: Add a background image, upload an album cover, select your font, text color, and neon glow.
-4. **Export**: Preview the video in real-time, then click **Generate & Download Video** to export your masterpiece as a high-quality video file.
+4. **Export**: Preview the playback, then click **Generate & Download Video** to render and save the video file.
 
 ---
 
