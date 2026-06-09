@@ -738,33 +738,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 let textContent = '';
 
                 if (spans.length > 0) {
-                    let currentTimeForWord = time;
-                    const leafSpans = [];
-                    function collectSpans(node) {
-                        if (node.nodeType === 1) {
+                    let lastWord = null;
+                    
+                    function traverse(node) {
+                        if (node.nodeType === 1) { // Element node
                             const hasChildElements = Array.from(node.childNodes).some(n => n.nodeType === 1);
                             if (node.tagName.toLowerCase() === 'span' && !hasChildElements) {
-                                leafSpans.push(node);
+                                const spanBegin = node.getAttribute('begin');
+                                const spanEnd = node.getAttribute('end');
+                                const wTime = spanBegin ? parseTime(spanBegin) : time;
+                                const wEndTime = spanEnd ? parseTime(spanEnd) : wTime + 1;
+                                const isBacking = checkIfBgElement(node) || checkIfBgElement(node.parentElement) || isLineBacking;
+                                
+                                const wText = node.textContent.trim().replace(/\s+/g, ' ');
+                                if (wText !== '') {
+                                    const wordObj = { text: wText, time: wTime, endTime: wEndTime, isBacking };
+                                    words.push(wordObj);
+                                    lastWord = wordObj;
+                                }
                             } else {
-                                Array.from(node.childNodes).forEach(collectSpans);
+                                Array.from(node.childNodes).forEach(traverse);
+                            }
+                        } else if (node.nodeType === 3) { // Text node
+                            const text = node.textContent;
+                            if (lastWord && /\s/.test(text)) {
+                                if (!lastWord.text.endsWith(' ') && 
+                                    !lastWord.text.endsWith('\u00A0') &&
+                                    !CJK_REGEX.test(lastWord.text)) {
+                                    lastWord.text += ' ';
+                                }
                             }
                         }
                     }
-                    collectSpans(p);
-
-                    leafSpans.forEach(span => {
-                        const spanBegin = span.getAttribute('begin');
-                        const spanEnd = span.getAttribute('end');
-                        const wTime = spanBegin ? parseTime(spanBegin) : time;
-                        const wEndTime = spanEnd ? parseTime(spanEnd) : wTime + 1;
-                        
-                        const isBacking = checkIfBgElement(span) || checkIfBgElement(span.parentElement) || isLineBacking;
-                        
-                        const wText = span.textContent.trim().replace(/\s+/g, ' ');
-                        if (wText !== '') {
-                            words.push({ text: wText, time: wTime, endTime: wEndTime, isBacking });
-                        }
-                    });
+                    
+                    Array.from(p.childNodes).forEach(traverse);
 
                     // Detect parenthetical backing vocals in the words sequence (second pass)
                     let insideParentheses = false;
@@ -787,20 +794,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         words.push(...filteredWords);
                     }
 
-                    // Auto-insert spaces between words if they are missing
-                    for (let j = 0; j < words.length - 1; j++) {
-                        const currentWord = words[j];
-                        const nextWord = words[j+1];
-                        if (!currentWord.text.endsWith(' ') && 
-                            !currentWord.text.endsWith('\u00A0') &&
-                            !nextWord.text.startsWith(' ') && 
-                            !nextWord.text.startsWith('\u00A0') &&
-                            !/^[.,!?\]}'")]/.test(nextWord.text) &&
-                            !CJK_REGEX.test(currentWord.text) &&
-                            !CJK_REGEX.test(nextWord.text)) {
-                            currentWord.text += ' ';
-                        }
-                    }
                     textContent = words.map(w => w.text).join('');
                 } else {
                     textContent = p.textContent.trim();
