@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const songKeyInput = document.getElementById('songKeyInput');
     const songBpmInput = document.getElementById('songBpmInput');
     const backingVocalsSelect = document.getElementById('backingVocalsSelect');
+    const bpmVisualizerSelect = document.getElementById('bpmVisualizerSelect');
 
     // Helper to ensure extracted album colors are adjusted properly for text or elements
     function adjustColorForReadability(r, g, b, minLightness = 0.7, maxLightness = 1.0, minSaturation = 0.5) {
@@ -128,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dynamicGlowCheckbox.checked = false;
         glowColorInput.disabled = false;
         if (backingVocalsSelect) backingVocalsSelect.value = 'styled';
+        if (bpmVisualizerSelect) bpmVisualizerSelect.value = 'ring-contract';
 
         // Reset credits to default single empty row
         creditsList.innerHTML = `
@@ -409,9 +411,22 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
+    document.fonts.ready.then(() => {
+        lyrics.forEach(lyric => {
+            delete lyric.cachedLines;
+        });
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
     if (backingVocalsSelect) {
         backingVocalsSelect.addEventListener('change', () => {
             updateLyricsFromEditor();
+        });
+    }
+
+    if (bpmVisualizerSelect) {
+        bpmVisualizerSelect.addEventListener('change', () => {
+            drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
         });
     }
 
@@ -864,6 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Draw Song Title and Artist Name (Left Side)
         const songTitle = songTitleInput.value.trim();
         const songArtist = songArtistInput.value.trim();
+
         // Calculate total height of metadata block to prevent it going off screen
         const creditRows = document.querySelectorAll('#creditsList .credits-row');
         let activeCreditsCount = 0;
@@ -922,7 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
-        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.1.0`, 40, 40);
+        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.1.1`, 40, 40);
         ctx.restore();
 
         // Draw Custom Credits (multiple rows flowing down from the artist)
@@ -950,75 +966,206 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Draw Song Key and BPM (Top Right)
+        // Draw Song Key and BPM Glassmorphic Pill Badge (Top Right)
         const songKey = songKeyInput.value.trim();
         const songBpmVal = songBpmInput.value.trim();
         const bpm = parseFloat(songBpmVal);
+        const hasBpm = !isNaN(bpm) && bpm > 0;
+        const visStyle = bpmVisualizerSelect ? bpmVisualizerSelect.value : 'ring-contract';
+        const showVis = hasBpm && visStyle !== 'none';
 
-        if (songKey || !isNaN(bpm)) {
+        if (songKey || hasBpm) {
             ctx.save();
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'top';
-            ctx.shadowColor = 'rgba(0,0,0,0.6)';
-            ctx.shadowBlur = 10;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
 
-            let textParts = [];
-            if (songKey) textParts.push(`Key: ${songKey}`);
-            if (!isNaN(bpm)) textParts.push(`${songBpmVal} BPM`);
+            let beforeText = '';
+            let afterText = '';
+            let beforeWidth = 0;
+            let afterWidth = 0;
+            let pillWidth = 0;
+            let pillX = 0;
+            const pillY = 40;
+            const pillHeight = 40;
 
-            const infoText = textParts.join('  |  ');
-            ctx.font = `600 24px "${currentFont}", sans-serif`;
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-            
-            // Draw BPM visualizer pulse dot if BPM is set and we are playing/recording
-            if (!isNaN(bpm) && bpm > 0) {
-                // Calculate position for visualizer dot
-                const textWidth = ctx.measureText(infoText).width;
-                const dotX = canvas.width - 40 - textWidth - 25;
-                const dotY = 40 + 12; // align with middle of text line (24px font)
+            let dotSpace = 50;
+            let dotOffset = 25;
 
-                // BPM pulse calculation
-                // Phase of the beat (0 to 1)
-                const beatDuration = 60 / bpm;
-                const beatPhase = (currentTime / beatDuration) % 1;
-                
-                // Pulse scaling effect: starts large and bright, decays exponentially
-                const pulseScale = Math.exp(-beatPhase * 4);
-                const baseRadius = 8;
-                const coreRadius = baseRadius + pulseScale * 4;
+            ctx.font = `600 20px "${currentFont}", sans-serif`;
 
-                // 1. Draw rhythm game approach ring (shrinks to coreRadius on the beat)
-                const approachRadius = baseRadius + (1 - beatPhase) * 24;
-                ctx.beginPath();
-                ctx.arc(dotX, dotY, approachRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = activeGlowColor;
-                ctx.lineWidth = 2;
-                ctx.globalAlpha = 0.8 * (1 - beatPhase);
-                ctx.stroke();
+            if (showVis) {
+                beforeText = songKey ? `Key: ${songKey}  |  ` : '';
+                afterText = `${songBpmVal} BPM`;
+                beforeWidth = beforeText ? ctx.measureText(beforeText).width : 0;
+                afterWidth = ctx.measureText(afterText).width;
 
-                // 2. Draw solid inner core (pulses on the beat)
-                ctx.beginPath();
-                ctx.arc(dotX, dotY, coreRadius, 0, Math.PI * 2);
-                ctx.fillStyle = '#ffffff';
-                ctx.shadowColor = activeGlowColor;
-                ctx.shadowBlur = 15 * pulseScale;
-                ctx.globalAlpha = 0.9 + pulseScale * 0.1;
-                ctx.fill();
-                
-                ctx.globalAlpha = 1.0;
-                ctx.shadowBlur = 0;
+                if (!beforeText) {
+                    dotSpace = 44;
+                    dotOffset = 12;
+                } else {
+                    dotSpace = 50;
+                    dotOffset = 25;
+                }
+
+                const contentWidth = beforeWidth + dotSpace + afterWidth;
+                pillWidth = 20 + contentWidth + 20;
+                pillX = canvas.width - 40 - pillWidth;
+            } else {
+                const badgeText = (songKey && hasBpm) ? `Key: ${songKey}  |  ${songBpmVal} BPM` : (songKey ? `Key: ${songKey}` : `${songBpmVal} BPM`);
+                const textWidth = ctx.measureText(badgeText).width;
+                pillWidth = 20 + textWidth + 20;
+                pillX = canvas.width - 40 - pillWidth;
             }
 
-            ctx.fillText(infoText, canvas.width - 40, 40);
+            // Draw pill background (glassmorphic dark background)
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 20);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fill();
+
+            // Flash overlay if pill-flash is selected
+            let pulseScale = 0;
+            let beatPhase = 0;
+            if (showVis) {
+                const beatDuration = 60 / bpm;
+                beatPhase = (currentTime / beatDuration) % 1;
+                pulseScale = Math.exp(-beatPhase * 4);
+            }
+
+            if (showVis && visStyle === 'pill-flash') {
+                ctx.save();
+                ctx.globalAlpha = 0.45 * pulseScale;
+                ctx.fillStyle = activeGlowColor;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Draw border
+            ctx.strokeStyle = (showVis && visStyle === 'pill-flash')
+                ? `rgba(255, 255, 255, ${0.12 + pulseScale * 0.38})`
+                : 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = (showVis && visStyle === 'pill-flash')
+                ? 1.5 + pulseScale * 1.0
+                : 1.5;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+
+            // Draw BPM visualizer pulse dot inside the pill if active
+            if (showVis) {
+                const dotX = pillX + 20 + beforeWidth + dotOffset;
+                const dotY = pillY + 20;
+
+                ctx.save();
+
+                if (visStyle === 'ring-contract') {
+                    // Contracting Ring
+                    const approachRadius = 10 + (1 - beatPhase) * 20;
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, approachRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = activeGlowColor;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.8 * (1 - beatPhase);
+                    ctx.stroke();
+
+                    // Pulsing Core
+                    const coreRadius = 9 + pulseScale * 4;
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, coreRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = activeGlowColor;
+                    ctx.shadowBlur = 18 * pulseScale;
+                    ctx.globalAlpha = 0.9 + pulseScale * 0.1;
+                    ctx.fill();
+                } else if (visStyle === 'ring-expand') {
+                    // Expanding Ring
+                    const expandRadius = 10 + beatPhase * 20;
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, expandRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = activeGlowColor;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.9 * (1 - beatPhase);
+                    ctx.stroke();
+
+                    // Core
+                    const coreRadius = 9 + pulseScale * 3;
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, coreRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = activeGlowColor;
+                    ctx.shadowBlur = 15 * pulseScale;
+                    ctx.globalAlpha = 0.9 + pulseScale * 0.1;
+                    ctx.fill();
+                } else if (visStyle === 'double-ring') {
+                    // Contracting Ring
+                    const approachRadius = 10 + (1 - beatPhase) * 16;
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, approachRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = activeGlowColor;
+                    ctx.lineWidth = 1.5;
+                    ctx.globalAlpha = 0.7 * (1 - beatPhase);
+                    ctx.stroke();
+
+                    // Expanding Ring
+                    const expandRadius = 10 + beatPhase * 16;
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, expandRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = activeGlowColor;
+                    ctx.lineWidth = 1.5;
+                    ctx.globalAlpha = 0.7 * (1 - beatPhase);
+                    ctx.stroke();
+
+                    // Core
+                    const coreRadius = 9 + pulseScale * 3;
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, coreRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = activeGlowColor;
+                    ctx.shadowBlur = 15 * pulseScale;
+                    ctx.globalAlpha = 0.9 + pulseScale * 0.1;
+                    ctx.fill();
+                } else if (visStyle === 'pill-flash') {
+                    // Core pulses in size too for extra visual punch
+                    const coreRadius = 9 + pulseScale * 3;
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, coreRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = activeGlowColor;
+                    ctx.shadowBlur = 20 * pulseScale;
+                    ctx.globalAlpha = 0.9 + pulseScale * 0.1;
+                    ctx.fill();
+                }
+
+                ctx.restore();
+
+                // Draw text elements
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                if (beforeText) {
+                    ctx.fillText(beforeText, pillX + 20, pillY + 20);
+                }
+                ctx.fillText(afterText, pillX + 20 + beforeWidth + dotSpace, pillY + 20);
+            } else {
+                // Draw plain text inside the pill without visualizer
+                const badgeText = (songKey && hasBpm) ? `Key: ${songKey}  |  ${songBpmVal} BPM` : (songKey ? `Key: ${songKey}` : `${songBpmVal} BPM`);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.fillText(badgeText, pillX + 20, pillY + 20);
+            }
+
             ctx.restore();
         }
+
+
 
         if (lyrics.length === 0) return;
 
         // Draw Lyrics (Right Side, Left Aligned)
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        const lyricX = 900; // Starting point for lyrics on the right
+        const lyricX = 850; // Starting point for lyrics on the right
         const centerY = canvas.height / 2;
 
         function getWrappedLines(context, lyric, maxWidth, font) {
@@ -1031,7 +1178,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let items = [];
             if (lyric.words && lyric.words.length > 0) {
-                items = lyric.words.map(w => ({ ...w }));
+                for (let i = 0; i < lyric.words.length; i++) {
+                    const w = lyric.words[i];
+                    const rawText = w.text;
+                    const parts = rawText.trim().split(/\s+/);
+                    if (parts.length > 1) {
+                        const duration = w.endTime - w.time;
+                        const partDuration = duration / parts.length;
+                        const endsWithSpace = rawText.endsWith(' ') || rawText.endsWith('\u00A0');
+                        for (let k = 0; k < parts.length; k++) {
+                            const isLast = (k === parts.length - 1);
+                            items.push({
+                                text: parts[k] + (!isLast || endsWithSpace ? ' ' : ''),
+                                time: w.time + k * partDuration,
+                                endTime: w.time + (k + 1) * partDuration,
+                                isBacking: w.isBacking
+                            });
+                        }
+                    } else {
+                        items.push({ ...w });
+                    }
+                }
             } else {
                 const textWords = lyric.text.split(' ');
                 for (let i = 0; i < textWords.length; i++) {
@@ -1285,7 +1452,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Wrap lines using a completely static font size (60px) to prevent layout/wrap jitter
             const font = `bold 60px "${currentFont}", sans-serif`;
             
-            const wrapped = getWrappedLines(ctx, lyric, 900, font);
+            const wrapped = getWrappedLines(ctx, lyric, 870, font);
             wrappedLinesArr[j] = wrapped;
 
             const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
