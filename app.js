@@ -771,8 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         } else if (node.nodeType === 3) { // Text node
                             const text = node.textContent;
-                            const isFormattingWhitespace = /[\r\n]/.test(text) && /^\s*$/.test(text);
-                            if (!isFormattingWhitespace && lastWord && /\s/.test(text)) {
+                            if (lastWord && /\s/.test(text)) {
                                 if (!lastWord.text.endsWith(' ') && 
                                     !lastWord.text.endsWith('\u00A0') &&
                                     !CJK_REGEX.test(lastWord.text)) {
@@ -1023,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
-        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.1.1`, 40, 40);
+        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.2.0`, 40, 40);
         ctx.restore();
 
         // Draw Custom Credits (multiple rows flowing down from the artist)
@@ -1448,72 +1447,89 @@ document.addEventListener('DOMContentLoaded', () => {
                 let currentX = x;
                 context.font = drawItem.font;
 
+                let lineText = '';
                 for (let j = 0; j < line.items.length; j++) {
                     const item = line.items[j];
-                    const isStyledBacking = item.isBacking && useBackingStyle;
-                    const spaceWidth = context.measureText(' ').width;
-                    currentX += item.leadingSpaces * spaceWidth;
-                    
-                    if (item.renderText) {
-                        if (isCurrent) {
-                            if (lyric.words && lyric.words.length > 0) {
-                                // TTML karaoke highlighting
-                                let progress = 0;
-                                const duration = item.endTime - item.time;
-                                if (currentTime >= item.endTime || duration <= 0) {
-                                    progress = 1;
-                                } else if (currentTime > item.time) {
-                                    progress = (currentTime - item.time) / duration;
-                                }
+                    lineText += ' '.repeat(item.leadingSpaces) + item.renderText + ' '.repeat(item.trailingSpaces);
+                }
 
-                                // Base inactive text
-                                context.fillStyle = isStyledBacking
-                                    ? `rgba(203, 213, 225, 0.25)`
-                                    : `rgba(203, 213, 225, 0.5)`;
-                                context.shadowColor = 'transparent';
-                                context.shadowBlur = 0;
-                                context.fillText(item.renderText, currentX, lineY);
+                const isStyledBacking = drawItem.isBacking && useBackingStyle;
 
-                                // Active highlighted text
-                                if (progress > 0) {
-                                    context.save();
-                                    context.beginPath();
-                                    context.rect(currentX, lineY - drawItem.lineHeight, item.cleanWidth * progress, drawItem.lineHeight * 2);
-                                    context.clip();
-                                    
-                                    context.font = drawItem.font;
-                                    context.fillStyle = currentLyricColor;
-                                    if (isStyledBacking) {
-                                        context.globalAlpha = 0.6; // dimmer active state for backing
-                                    }
-                                    context.shadowColor = activeGlowColor;
-                                    context.shadowBlur = (isStyledBacking ? 8 : 20) * opacity;
-                                    context.fillText(item.renderText, currentX, lineY);
-                                    context.restore();
-                                }
-                            } else {
-                                // LRC active line (fully highlighted)
-                                context.fillStyle = currentLyricColor;
-                                if (isStyledBacking) {
-                                    context.globalAlpha = 0.6; // dimmer active state for backing
-                                }
-                                context.shadowColor = activeGlowColor;
-                                context.shadowBlur = (isStyledBacking ? 8 : 20) * opacity;
-                                context.fillText(item.renderText, currentX, lineY);
-                                context.globalAlpha = 1.0;
+                if (isCurrent) {
+                    // Base inactive line
+                    context.fillStyle = isStyledBacking
+                        ? `rgba(203, 213, 225, 0.25)`
+                        : `rgba(203, 213, 225, 0.5)`;
+                    context.shadowColor = 'transparent';
+                    context.shadowBlur = 0;
+                    context.fillText(lineText, x, lineY);
+
+                    // Calculate active highlighted width
+                    let activeWidth = 0;
+                    let hasActive = false;
+                    let lastItemProgress = 0;
+
+                    for (let j = 0; j < line.items.length; j++) {
+                        const item = line.items[j];
+                        const spaceWidth = context.measureText(' ').width;
+                        activeWidth += item.leadingSpaces * spaceWidth;
+
+                        let progress = 0;
+                        if (lyric.words && lyric.words.length > 0) {
+                            const duration = item.endTime - item.time;
+                            if (currentTime >= item.endTime || duration <= 0) {
+                                progress = 1;
+                            } else if (currentTime > item.time) {
+                                progress = (currentTime - item.time) / duration;
                             }
                         } else {
-                            // Inactive line (normal or backing)
-                            context.fillStyle = isStyledBacking
-                                ? `rgba(203, 213, 225, ${opacity * 0.25})`
-                                : `rgba(203, 213, 225, ${opacity * 0.5})`;
-                            context.shadowColor = 'transparent';
-                            context.shadowBlur = 0;
-                            context.fillText(item.renderText, currentX, lineY);
+                            progress = 1; // LRC active line fully highlights at once
                         }
-                        currentX += item.cleanWidth;
+
+                        if (progress > 0) {
+                            hasActive = true;
+                            activeWidth += item.cleanWidth * progress;
+                        }
+                        
+                        lastItemProgress = progress;
+
+                        if (progress < 1) {
+                            break;
+                        }
+
+                        activeWidth += item.trailingSpaces * spaceWidth;
                     }
-                    currentX += item.trailingSpaces * spaceWidth;
+
+                    if (hasActive) {
+                        context.save();
+                        const blurRadius = (isStyledBacking ? 8 : 20) * opacity;
+                        
+                        // If the line is not fully active, apply clipping to the active sweep width
+                        const isFullyActive = (lastItemProgress >= 1);
+                        if (!isFullyActive) {
+                            context.beginPath();
+                            context.rect(x - blurRadius * 2, lineY - drawItem.lineHeight, activeWidth + blurRadius * 2, drawItem.lineHeight * 2);
+                            context.clip();
+                        }
+
+                        context.font = drawItem.font;
+                        context.fillStyle = currentLyricColor;
+                        if (isStyledBacking) {
+                            context.globalAlpha = 0.6;
+                        }
+                        context.shadowColor = activeGlowColor;
+                        context.shadowBlur = blurRadius;
+                        context.fillText(lineText, x, lineY);
+                        context.restore();
+                    }
+                } else {
+                    // Normal inactive line
+                    context.fillStyle = isStyledBacking
+                        ? `rgba(203, 213, 225, ${opacity * 0.25})`
+                        : `rgba(203, 213, 225, ${opacity * 0.5})`;
+                    context.shadowColor = 'transparent';
+                    context.shadowBlur = 0;
+                    context.fillText(lineText, x, lineY);
                 }
 
                 currentY += drawItem.lineHeight;

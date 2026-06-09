@@ -484,15 +484,6 @@ textarea:focus {
     border-radius: 16px;
     padding: 1.5rem;
     position: relative;
-    transition: all 0.8s ease;
-}
-
-.step-card:hover {
-    transform: translateY(-4px);
-    background: rgba(255, 255, 255, 0.04);
-    border-color: var(--theme-primary-shadow);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .step-number {
@@ -709,12 +700,6 @@ footer {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-.modal-card:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(236, 72, 153, 0.2);
 }
 
 .modal-card-icon {
@@ -787,15 +772,6 @@ footer {
     border: 1px solid var(--glass-border);
     border-radius: 16px;
     padding: 1.5rem;
-    transition: all 0.8s ease;
-}
-
-.faq-card:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.04);
-    border-color: var(--theme-primary-shadow);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .faq-card h3 {
