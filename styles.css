@@ -149,7 +149,7 @@ header p {
 
 main {
     display: grid;
-    grid-template-columns: 450px 1fr;
+    grid-template-columns: 450px minmax(0, 1fr);
     gap: 2rem;
     flex: 1;
     align-items: start;
@@ -294,6 +294,9 @@ input[type="file"]::file-selector-button:hover {
     flex-direction: column;
     justify-content: center;
     padding: 0;
+    min-width: 0;
+    position: sticky;
+    top: 2rem;
 }
 
 .canvas-container {
@@ -846,4 +849,161 @@ footer {
         opacity: 1; 
         transform: translateY(0) scale(1); 
     }
+}
+
+/* Custom Upload Cards Styling */
+.upload-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    background: var(--glass-bg);
+    border: 2px dashed var(--glass-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    min-height: 80px;
+    text-align: left;
+    user-select: none;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.upload-card:hover {
+    border-color: var(--theme-primary);
+    background: rgba(99, 102, 241, 0.06);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px var(--theme-primary-shadow);
+}
+
+.upload-card.success {
+    border-color: #4ade80;
+    border-style: solid;
+    background: rgba(74, 222, 128, 0.05);
+}
+
+.upload-card.loading {
+    border-color: var(--theme-secondary);
+    border-style: solid;
+    background: rgba(236, 72, 153, 0.05);
+    cursor: wait;
+}
+
+.upload-icon {
+    font-size: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.upload-card:hover .upload-icon {
+    transform: scale(1.1);
+}
+
+.upload-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.upload-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+.upload-subtitle {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Previews for BG Image and Album Art cards */
+.image-upload-card {
+    min-height: 120px;
+}
+
+.upload-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
+    border-radius: 14px;
+    transition: all 0.3s ease;
+}
+
+.upload-preview::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(0deg, rgba(15, 17, 26, 0.8) 0%, rgba(15, 17, 26, 0.2) 100%);
+    border-radius: 14px;
+}
+
+.upload-card-content {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+/* Morphing card styling when image has preview */
+.upload-card.has-preview {
+    border-style: solid;
+    border-color: var(--glass-border);
+}
+
+.upload-card.has-preview:hover {
+    border-color: var(--theme-primary);
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
+}
+
+.upload-card.has-preview .upload-icon {
+    font-size: 1.8rem;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.upload-card.has-preview .upload-title {
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+
+.upload-card.has-preview .upload-subtitle {
+    color: #e2e8f0;
+    font-weight: 500;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+
+/* Upload spinner */
+.upload-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top: 3px solid var(--theme-secondary);
+    border-radius: 50%;
+    animation: upload-spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes upload-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

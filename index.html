@@ -44,33 +44,81 @@
                 <div class="tab-content active" id="tab-files">
                     <div class="customization-grid">
                         <div class="input-group">
-                            <label for="audioInput">1. Audio (MP3/WAV)</label>
-                            <input type="file" id="audioInput" accept="audio/*">
+                            <label
+                                style="font-weight: 600; font-size: 1rem; color: var(--text-muted); margin-bottom: 0.25rem;">1.
+                                Audio (MP3/WAV)</label>
+                            <label for="audioInput" class="upload-card" id="audioUploadCard">
+                                <div class="upload-icon">🎵</div>
+                                <div class="upload-text">
+                                    <span class="upload-title">Audio File</span>
+                                    <span class="upload-subtitle" id="audioSubtitle">Click to select or drag audio
+                                        here</span>
+                                </div>
+                                <div class="upload-spinner" id="audioSpinner" style="display: none;"></div>
+                            </label>
+                            <input type="file" id="audioInput" accept="audio/*" style="display: none;">
                         </div>
 
                         <div class="input-group">
-                            <label for="lrcInput">2. Lyrics (.lrc/.ttml)</label>
-                            <input type="file" id="lrcInput" accept=".lrc,.ttml,.xml,text/plain,application/xml,text/xml">
+                            <label
+                                style="font-weight: 600; font-size: 1rem; color: var(--text-muted); margin-bottom: 0.25rem;">2.
+                                Lyrics (.lrc/.ttml)</label>
+                            <label for="lrcInput" class="upload-card" id="lrcUploadCard">
+                                <div class="upload-icon">📝</div>
+                                <div class="upload-text">
+                                    <span class="upload-title">Lyrics File</span>
+                                    <span class="upload-subtitle" id="lrcSubtitle">Click to select or drag lyrics
+                                        here</span>
+                                </div>
+                            </label>
+                            <input type="file" id="lrcInput"
+                                accept=".lrc,.ttml,.xml,text/plain,application/xml,text/xml" style="display: none;">
                         </div>
                     </div>
 
                     <div class="customization-grid">
                         <div class="input-group">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <label for="bgInput">3. BG Image</label>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                <label style="font-weight: 600; font-size: 1rem; color: var(--text-muted);">3. BG
+                                    Image</label>
                                 <button id="removeBgBtn" class="btn text-danger small"
                                     style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
                             </div>
-                            <input type="file" id="bgInput" accept="image/*">
+                            <label for="bgInput" class="upload-card image-upload-card" id="bgUploadCard">
+                                <div class="upload-preview" id="bgPreview" style="display: none;"></div>
+                                <div class="upload-card-content" id="bgCardContent">
+                                    <div class="upload-icon">🖼️</div>
+                                    <div class="upload-text">
+                                        <span class="upload-title">Background Image</span>
+                                        <span class="upload-subtitle" id="bgSubtitle">Click to select or drag image
+                                            here</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <input type="file" id="bgInput" accept="image/*" style="display: none;">
                         </div>
 
                         <div class="input-group">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <label for="albumInput">4. Album Cover</label>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                <label style="font-weight: 600; font-size: 1rem; color: var(--text-muted);">4. Album
+                                    Cover</label>
                                 <button id="removeAlbumBtn" class="btn text-danger small"
                                     style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
                             </div>
-                            <input type="file" id="albumInput" accept="image/*">
+                            <label for="albumInput" class="upload-card image-upload-card" id="albumUploadCard">
+                                <div class="upload-preview" id="albumPreview" style="display: none;"></div>
+                                <div class="upload-card-content" id="albumCardContent">
+                                    <div class="upload-icon">💿</div>
+                                    <div class="upload-text">
+                                        <span class="upload-title">Album Art</span>
+                                        <span class="upload-subtitle" id="albumSubtitle">Click to select or drag image
+                                            here</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <input type="file" id="albumInput" accept="image/*" style="display: none;">
                         </div>
                     </div>
 
@@ -78,13 +126,31 @@
                         <label for="albumUrl">Or paste Album Cover URL</label>
                         <div style="display: flex; gap: 0.5rem; width: 100%;">
                             <input type="text" id="albumUrl" placeholder="Paste URL..." style="flex: 1;">
-                            <button id="loadAlbumUrl" class="btn small" style="width: auto; padding: 0 1.2rem; margin: 0;">Load</button>
+                            <button id="loadAlbumUrl" class="btn small"
+                                style="width: auto; padding: 0 1.2rem; margin: 0;">Load</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Tab 2: Song Details & Info -->
                 <div class="tab-content" id="tab-details">
+                    <!-- iTunes Metadata Search -->
+                    <div class="input-group"
+                        style="margin-bottom: 1.25rem; background: rgba(255, 255, 255, 0.03); padding: 0.85rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+                        <label for="itunesSearchInput" style="font-weight: 600; font-size: 0.9rem;">🔍 Auto-fill Artwork
+                            & Info from iTunes</label>
+                        <div style="display: flex; gap: 0.5rem; width: 100%; margin-top: 0.25rem;">
+                            <input type="text" id="itunesSearchInput" placeholder="Search song title and/or artist..."
+                                style="flex: 1; margin: 0; font-size: 0.85rem; padding: 0.5rem 0.75rem;">
+                            <button type="button" id="itunesSearchBtn" class="btn small primary"
+                                style="width: auto; padding: 0 1rem; margin: 0; border-radius: 8px; font-size: 0.8rem;">Search</button>
+                        </div>
+                        <div id="itunesSearchResults"
+                            style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; max-height: 160px; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; background: rgba(0, 0, 0, 0.25); display: none;">
+                            <!-- Search results will populate here -->
+                        </div>
+                    </div>
+
                     <div class="input-group">
                         <label for="songTitleInput">Song Title</label>
                         <input type="text" id="songTitleInput" placeholder="e.g. Blinding Lights">
@@ -107,11 +173,15 @@
                                     <option value="Presented by">Presented by</option>
                                     <option value="Created for">Created for</option>
                                 </select>
-                                <input type="text" class="credits-name" placeholder="e.g. DJ Awesome" style="flex: 2; margin: 0; min-width: 0;">
-                                <button type="button" class="btn small remove-credit-btn" style="flex: 0.3; padding: 0.8rem 0.5rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid rgb(239, 68, 68); color: rgb(239, 68, 68); display: none; font-size: 0.8rem; border-radius: 12px; justify-content: center; align-items: center; cursor: pointer; height: 100%;">✕</button>
+                                <input type="text" class="credits-name" placeholder="e.g. DJ Awesome"
+                                    style="flex: 2; margin: 0; min-width: 0;">
+                                <button type="button" class="btn small remove-credit-btn"
+                                    style="flex: 0.3; padding: 0.8rem 0.5rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid rgb(239, 68, 68); color: rgb(239, 68, 68); display: none; font-size: 0.8rem; border-radius: 12px; justify-content: center; align-items: center; cursor: pointer; height: 100%;">✕</button>
                             </div>
                         </div>
-                        <button type="button" id="addCreditBtn" class="btn small secondary" style="width: auto; align-self: flex-start; padding: 0.5rem 1rem; margin-top: 0.5rem; font-size: 0.85rem; border-radius: 8px;">+ Add Credit Line</button>
+                        <button type="button" id="addCreditBtn" class="btn small secondary"
+                            style="width: auto; align-self: flex-start; padding: 0.5rem 1rem; margin-top: 0.5rem; font-size: 0.85rem; border-radius: 8px;">+
+                            Add Credit Line</button>
                     </div>
                     <div class="input-group-row" style="display: flex; gap: 1rem;">
                         <div class="input-group" style="flex: 1;">
@@ -173,18 +243,24 @@
                             </div>
                             <input type="color" id="glowColor" value="#6366f1">
                         </div>
-                        <div class="input-group" style="display: flex; flex-direction: column; align-items: flex-start; height: 100%; margin-top: 1.5rem;">
-                            <label for="backingVocalsSelect" style="font-weight: 600; color: var(--text-muted); width: 100%;">Backing Vocals</label>
+                        <div class="input-group"
+                            style="display: flex; flex-direction: column; align-items: flex-start; height: 100%; margin-top: 1.5rem;">
+                            <label for="backingVocalsSelect"
+                                style="font-weight: 600; color: var(--text-muted); width: 100%;">Backing Vocals</label>
                             <select id="backingVocalsSelect" style="width: 100%;">
                                 <option value="styled">Show (Apple Music Style)</option>
                                 <option value="normal">Show (Normal Style)</option>
                                 <option value="hide">Hide / Remove</option>
                             </select>
-                            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: block; line-height: 1.2;">(Only if the lyric file has backing vocals)</span>
+                            <span
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: block; line-height: 1.2;">(Only
+                                if the lyric file has backing vocals)</span>
                         </div>
 
-                        <div class="input-group" style="display: flex; flex-direction: column; align-items: flex-start; height: 100%; margin-top: 1.5rem;">
-                            <label for="bpmVisualizerSelect" style="font-weight: 600; color: var(--text-muted); width: 100%;">BPM Visualizer</label>
+                        <div class="input-group"
+                            style="display: flex; flex-direction: column; align-items: flex-start; height: 100%; margin-top: 1.5rem;">
+                            <label for="bpmVisualizerSelect"
+                                style="font-weight: 600; color: var(--text-muted); width: 100%;">BPM Visualizer</label>
                             <select id="bpmVisualizerSelect" style="width: 100%;">
                                 <option value="ring-contract">Contracting Ring (Approach)</option>
                                 <option value="ring-expand">Expanding Sonar Ring</option>
@@ -192,7 +268,9 @@
                                 <option value="double-ring">Concentric Double Rings</option>
                                 <option value="none">Disabled / Off</option>
                             </select>
-                            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: block; line-height: 1.2;">(Pulsing beat style for top-right metadata)</span>
+                            <span
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: block; line-height: 1.2;">(Pulsing
+                                beat style for top-right metadata)</span>
                         </div>
                     </div>
                 </div>
@@ -200,17 +278,34 @@
                 <!-- Tab 4: Lyric Editor -->
                 <div class="tab-content" id="tab-editor">
                     <div class="input-group" style="margin-bottom: 1rem;">
-                        <label for="animatePlainLyricsSelect" style="font-weight: 600; color: var(--text-muted); width: 100%;">Karaoke Animation (Word Highlight)</label>
+                        <label for="animatePlainLyricsSelect"
+                            style="font-weight: 600; color: var(--text-muted); width: 100%;">Karaoke Animation (Word
+                            Highlight)</label>
                         <select id="animatePlainLyricsSelect" style="width: 100%;">
                             <option value="default">Use File Default (Respect file timings)</option>
                             <option value="on">Force Word-by-Word (Karaoke)</option>
                             <option value="off">Force Line-by-Line (Standard)</option>
                         </select>
-                        <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: block; line-height: 1.2;">(Applies word/character-level highlight animations to lyrics)</span>
+                        <span
+                            style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: block; line-height: 1.2;">(Applies
+                            word/character-level highlight animations to lyrics)</span>
                     </div>
                     <div class="input-group" style="height: 100%;">
                         <label for="lrcEditor">Lyric Editor (Live Edit)</label>
-                        <textarea id="lrcEditor" placeholder="Upload an .lrc/.ttml file or type lyrics here..." style="min-height: 250px;"></textarea>
+                        <textarea id="lrcEditor" placeholder="Upload an .lrc/.ttml file or type lyrics here..."
+                            style="min-height: 250px;"></textarea>
+                    </div>
+                    <button type="button" id="fetchYoulyLyricsBtn" class="btn small primary"
+                        style="margin-top: 0.5rem; width: 100%; border-radius: 10px; padding: 0.7rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem; cursor: pointer; height: auto;">🔍
+                        Fetch Synced Lyrics from YouLy+</button>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 1rem; width: 100%;">
+                        <button type="button" id="exportProjectBtn" class="btn small"
+                            style="flex: 1; padding: 0.7rem 0.5rem; font-size: 0.8rem; border-radius: 10px; background: rgba(99, 102, 241, 0.08); border: 1px solid var(--theme-primary); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; margin: 0; height: auto;">📤
+                            Export Project</button>
+                        <button type="button" id="importProjectBtn" class="btn small"
+                            style="flex: 1; padding: 0.7rem 0.5rem; font-size: 0.8rem; border-radius: 10px; background: rgba(99, 102, 241, 0.08); border: 1px solid var(--theme-primary); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; margin: 0; height: auto;">📥
+                            Import Project</button>
+                        <input type="file" id="importProjectFile" accept=".json" style="display: none;">
                     </div>
                 </div>
 
@@ -239,28 +334,28 @@
             <div class="steps-grid">
                 <div class="step-card">
                     <div class="step-number">1</div>
-                    <h3>Prepare Audio</h3>
-                    <p>Upload a high-quality audio file (.mp3 or .wav). If you need to isolate or clean up the audio
-                        first, you can use <a href="https://vocalremover.org" target="_blank"
-                            rel="noopener">vocalremover.org</a>.</p>
+                    <h3>Upload or Auto-Fill</h3>
+                    <p>Drag files into custom cards, or use the <strong>Info</strong> tab's iTunes Search to auto-fill
+                        song details, BPM, key, and download high-resolution cover art automatically.</p>
                 </div>
                 <div class="step-card">
                     <div class="step-number">2</div>
-                    <h3>Get Lyrics</h3>
-                    <p>Obtain a synchronized lyric file (.lrc or .ttml). You can easily find synced lyrics for any song
-                        at <a href="https://youlyplus.prjktla.my.id/findlyrics.html" target="_blank"
-                            rel="noopener">Youly Plus Find Lyrics</a>.</p>
+                    <h3>Check & Sync Lyrics</h3>
+                    <p>Synced lyrics are automatically fetched in the background when selecting an iTunes search result,
+                        or you can click "Fetch Synced Lyrics" in the <strong>Lyrics</strong> tab to query LyricsPlus.
+                    </p>
                 </div>
                 <div class="step-card">
                     <div class="step-number">3</div>
-                    <h3>Customize & Design</h3>
-                    <p>Add a background image or album cover. Choose your font, adjust text colors, add a glowing
-                        effect, and set your credits name.</p>
+                    <h3>Customize & Style</h3>
+                    <p>Choose backgrounds like "Album Cover Colors Gradient" (reactive Material You styling), customize
+                        fonts, add a matching dynamic glow, and set credits badges or BPM visualizers.</p>
                 </div>
                 <div class="step-card">
                     <div class="step-number">4</div>
-                    <h3>Export Video</h3>
-                    <p>Preview the video in real-time. When satisfied, click "Generate & Download Video" to export the final video file.</p>
+                    <h3>Preview & Export</h3>
+                    <p>Preview your video in real-time, configure target frame rate (30/60 FPS), and export WebM/MP4
+                        videos directly and securely in your browser.</p>
                 </div>
             </div>
         </section>
@@ -303,22 +398,22 @@
                 </div>
                 <div class="faq-card">
                     <h3>Can I use this program offline?</h3>
-                    <p>Yes! Once the page is loaded, you can disconnect from the internet completely and the application
-                        will continue to work perfectly. This confirms that all rendering, audio processing, and video
-                        generation occur entirely offline on your local computer.</p>
+                    <p>Yes! Once loaded, video playback and exports are processed 100% locally on your computer without
+                        internet. However, searching iTunes or auto-fetching lyrics from YouLy+/LyricsPlus requires an
+                        active internet connection.</p>
                 </div>
                 <div class="faq-card">
                     <h3>I don't have a lyric file for my song</h3>
-                    <p>You can search for pre-synchronized lyric files using the resources recommended in our guide.
-                        Alternatively, you can write the synchronization tags yourself in the Live Editor, or use the
-                        interactive <a href="https://amll-ttml-tool.stevexmh.net/" target="_blank" rel="noopener">AMLL
-                            TTML Tool</a> to easily sync lyrics word-by-word.</p>
+                    <p>No problem! You can auto-fetch synchronized lyrics with a single click in the
+                        <strong>Lyrics</strong> tab (via LyricsPlus), or when selecting an iTunes search result. You can
+                        also write/edit synchronization tags directly in the Live Editor, or import them.
+                    </p>
                 </div>
                 <div class="faq-card">
                     <h3>Will you ever support automatic audio transcription?</h3>
                     <p>No, we will not. In order to keep this application 100% serverless (running entirely offline on
                         your own device), we do not send your audio files to cloud-based AI transcription servers. We
-                        recommend using the tools recommended in our guide to find or generate synchronized lyric files
+                        recommend using the iTunes auto-fill and lyric fetching options to get synchronized lyrics
                         beforehand.</p>
                 </div>
                 <div class="faq-card">
@@ -339,7 +434,8 @@
             </p>
             <p class="github-link"><a href="https://github.com/Zexerif/lyric-video-maker" target="_blank"
                     rel="noopener">View on GitHub</a></p>
-            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v1.2.0</p>
+            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v1.3.0
+            </p>
         </footer>
     </div>
 
@@ -375,9 +471,12 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-settings" style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--glass-border);">
-                <label for="exportFpsSelect" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Target Frame Rate</label>
-                <select id="exportFpsSelect" style="width: auto; padding: 0.4rem 2rem 0.4rem 1rem; font-size: 0.9rem; margin: 0; border-radius: 8px;">
+            <div class="modal-settings"
+                style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px; border: 1px solid var(--glass-border);">
+                <label for="exportFpsSelect"
+                    style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Target Frame Rate</label>
+                <select id="exportFpsSelect"
+                    style="width: auto; padding: 0.4rem 2rem 0.4rem 1rem; font-size: 0.9rem; margin: 0; border-radius: 8px;">
                     <option value="30">30 FPS (Standard - Recommended)</option>
                     <option value="60">60 FPS (Ultra Smooth - Needs powerful hardware)</option>
                 </select>
