@@ -664,6 +664,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return parsed.sort((a, b) => a.time - b.time);
     }
 
+    function cleanSpanText(text) {
+        let cleaned = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
+        const endsWithSpace = /\s$/.test(text);
+        const startsWithSpace = /^\s/.test(text);
+        cleaned = cleaned.trim();
+        if (startsWithSpace) cleaned = ' ' + cleaned;
+        if (endsWithSpace) cleaned = cleaned + ' ';
+        return cleaned;
+    }
+
     function parseTtml(ttmlText) {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(ttmlText, "text/xml");
@@ -750,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const wEndTime = spanEnd ? parseTime(spanEnd) : wTime + 1;
                                 const isBacking = checkIfBgElement(node) || checkIfBgElement(node.parentElement) || isLineBacking;
                                 
-                                const wText = node.textContent.trim().replace(/\s+/g, ' ');
+                                const wText = cleanSpanText(node.textContent);
                                 if (wText !== '') {
                                     const wordObj = { text: wText, time: wTime, endTime: wEndTime, isBacking };
                                     words.push(wordObj);
@@ -761,7 +771,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         } else if (node.nodeType === 3) { // Text node
                             const text = node.textContent;
-                            if (lastWord && /\s/.test(text)) {
+                            const isFormattingWhitespace = /[\r\n]/.test(text) && /^\s*$/.test(text);
+                            if (!isFormattingWhitespace && lastWord && /\s/.test(text)) {
                                 if (!lastWord.text.endsWith(' ') && 
                                     !lastWord.text.endsWith('\u00A0') &&
                                     !CJK_REGEX.test(lastWord.text)) {
