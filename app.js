@@ -560,6 +560,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }))
             .sort((a, b) => b.score - a.score);
 
+        if (sorted.length === 1) {
+            const c = sorted[0];
+            const avg = (c.r + c.g + c.b) / 3;
+            const shift = avg > 128 ? -30 : 30;
+            sorted.push({
+                r: Math.max(0, Math.min(255, c.r + shift)),
+                g: Math.max(0, Math.min(255, c.g + shift)),
+                b: Math.max(0, Math.min(255, c.b + shift)),
+                score: 0
+            });
+        }
+
         // Return top 4 colors for the palette
         return sorted.slice(0, 4).map(c => ({ r: c.r, g: c.g, b: c.b }));
     }
@@ -1220,7 +1232,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
-        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.3.0`, 40, 40);
+        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.3.1`, 40, 40);
         ctx.restore();
 
         // Draw Custom Credits (multiple rows flowing down from the artist)
