@@ -11,7 +11,7 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&family=Lexend:wght@400;600;800&family=Bebas+Neue&family=Montserrat:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@700&family=Permanent+Marker&family=Pacifico&family=Comic+Neue:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/index.css">
-    <link rel="stylesheet" href="styles.css?v=1.2.0">
+    <link rel="stylesheet" href="styles.css?v=1.3.1">
 </head>
 
 <body>
@@ -42,84 +42,80 @@
 
                 <!-- Tab 1: Files -->
                 <div class="tab-content active" id="tab-files">
-                    <div class="customization-grid">
-                        <div class="input-group">
-                            <label
-                                style="font-weight: 600; font-size: 1rem; color: var(--text-muted); margin-bottom: 0.25rem;">1.
-                                Audio (MP3/WAV)</label>
-                            <label for="audioInput" class="upload-card" id="audioUploadCard">
-                                <div class="upload-icon">🎵</div>
-                                <div class="upload-text">
-                                    <span class="upload-title">Audio File</span>
-                                    <span class="upload-subtitle" id="audioSubtitle">Click to select or drag audio
-                                        here</span>
-                                </div>
-                                <div class="upload-spinner" id="audioSpinner" style="display: none;"></div>
-                            </label>
-                            <input type="file" id="audioInput" accept="audio/*" style="display: none;">
-                        </div>
-
-                        <div class="input-group">
-                            <label
-                                style="font-weight: 600; font-size: 1rem; color: var(--text-muted); margin-bottom: 0.25rem;">2.
-                                Lyrics (.lrc/.ttml)</label>
-                            <label for="lrcInput" class="upload-card" id="lrcUploadCard">
-                                <div class="upload-icon">📝</div>
-                                <div class="upload-text">
-                                    <span class="upload-title">Lyrics File</span>
-                                    <span class="upload-subtitle" id="lrcSubtitle">Click to select or drag lyrics
-                                        here</span>
-                                </div>
-                            </label>
-                            <input type="file" id="lrcInput"
-                                accept=".lrc,.ttml,.xml,text/plain,application/xml,text/xml" style="display: none;">
-                        </div>
+                    <div class="input-group">
+                        <label
+                            style="font-weight: 600; font-size: 1rem; color: var(--text-muted); margin-bottom: 0.25rem;">1.
+                            Audio (MP3/WAV)</label>
+                        <label for="audioInput" class="upload-card" id="audioUploadCard">
+                            <div class="upload-icon">🎵</div>
+                            <div class="upload-text">
+                                <span class="upload-title">Audio File</span>
+                                <span class="upload-subtitle" id="audioSubtitle">Click to select or drag audio
+                                    here</span>
+                            </div>
+                            <div class="upload-spinner" id="audioSpinner" style="display: none;"></div>
+                        </label>
+                        <input type="file" id="audioInput" accept="audio/*" style="display: none;">
                     </div>
 
-                    <div class="customization-grid">
-                        <div class="input-group">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                                <label style="font-weight: 600; font-size: 1rem; color: var(--text-muted);">3. BG
-                                    Image</label>
-                                <button id="removeBgBtn" class="btn text-danger small"
-                                    style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
+                    <div class="input-group">
+                        <label
+                            style="font-weight: 600; font-size: 1rem; color: var(--text-muted); margin-bottom: 0.25rem;">2.
+                            Lyrics (.lrc/.ttml)</label>
+                        <label for="lrcInput" class="upload-card" id="lrcUploadCard">
+                            <div class="upload-icon">📝</div>
+                            <div class="upload-text">
+                                <span class="upload-title">Lyrics File</span>
+                                <span class="upload-subtitle" id="lrcSubtitle">Click to select or drag lyrics
+                                    here</span>
                             </div>
-                            <label for="bgInput" class="upload-card image-upload-card" id="bgUploadCard">
-                                <div class="upload-preview" id="bgPreview" style="display: none;"></div>
-                                <div class="upload-card-content" id="bgCardContent">
-                                    <div class="upload-icon">🖼️</div>
-                                    <div class="upload-text">
-                                        <span class="upload-title">Background Image</span>
-                                        <span class="upload-subtitle" id="bgSubtitle">Click to select or drag image
-                                            here</span>
-                                    </div>
-                                </div>
-                            </label>
-                            <input type="file" id="bgInput" accept="image/*" style="display: none;">
-                        </div>
+                        </label>
+                        <input type="file" id="lrcInput"
+                            accept=".lrc,.ttml,.xml,text/plain,application/xml,text/xml" style="display: none;">
+                    </div>
 
-                        <div class="input-group">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                                <label style="font-weight: 600; font-size: 1rem; color: var(--text-muted);">4. Album
-                                    Cover</label>
-                                <button id="removeAlbumBtn" class="btn text-danger small"
-                                    style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
-                            </div>
-                            <label for="albumInput" class="upload-card image-upload-card" id="albumUploadCard">
-                                <div class="upload-preview" id="albumPreview" style="display: none;"></div>
-                                <div class="upload-card-content" id="albumCardContent">
-                                    <div class="upload-icon">💿</div>
-                                    <div class="upload-text">
-                                        <span class="upload-title">Album Art</span>
-                                        <span class="upload-subtitle" id="albumSubtitle">Click to select or drag image
-                                            here</span>
-                                    </div>
-                                </div>
-                            </label>
-                            <input type="file" id="albumInput" accept="image/*" style="display: none;">
+                    <div class="input-group">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <label style="font-weight: 600; font-size: 1rem; color: var(--text-muted);">3. BG
+                                Image</label>
+                            <button id="removeBgBtn" class="btn text-danger small"
+                                style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
                         </div>
+                        <label for="bgInput" class="upload-card image-upload-card" id="bgUploadCard">
+                            <div class="upload-preview" id="bgPreview" style="display: none;"></div>
+                            <div class="upload-card-content" id="bgCardContent">
+                                <div class="upload-icon">🖼️</div>
+                                <div class="upload-text">
+                                    <span class="upload-title">Background Image</span>
+                                    <span class="upload-subtitle" id="bgSubtitle">Click to select or drag image
+                                        here</span>
+                                </div>
+                            </div>
+                        </label>
+                        <input type="file" id="bgInput" accept="image/*" style="display: none;">
+                    </div>
+
+                    <div class="input-group">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <label style="font-weight: 600; font-size: 1rem; color: var(--text-muted);">4. Album
+                                Cover</label>
+                            <button id="removeAlbumBtn" class="btn text-danger small"
+                                style="display: none; width: auto; padding: 0.2rem 0.6rem; font-size: 0.8rem; margin: 0; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; border-radius: 8px;">Remove</button>
+                        </div>
+                        <label for="albumInput" class="upload-card image-upload-card" id="albumUploadCard">
+                            <div class="upload-preview" id="albumPreview" style="display: none;"></div>
+                            <div class="upload-card-content" id="albumCardContent">
+                                <div class="upload-icon">💿</div>
+                                <div class="upload-text">
+                                    <span class="upload-title">Album Art</span>
+                                    <span class="upload-subtitle" id="albumSubtitle">Click to select or drag image
+                                        here</span>
+                                </div>
+                            </div>
+                        </label>
+                        <input type="file" id="albumInput" accept="image/*" style="display: none;">
                     </div>
 
                     <div class="input-group" style="margin-top: -0.5rem;">

@@ -495,80 +495,70 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
 
-        // Bucket pixels by hue ranges to find dominant hues
-        const buckets = Array.from({ length: 12 }, () => ({ r: 0, g: 0, b: 0, count: 0, satSum: 0 }));
+        // 16 buckets: 12 vibrant (based on hue), 4 neutral (based on lightness)
+        const buckets = Array.from({ length: 16 }, () => ({ r: 0, g: 0, b: 0, count: 0, satSum: 0 }));
 
         for (let i = 0; i < imageData.length; i += 4) {
-            const r = imageData[i] / 255;
-            const g = imageData[i + 1] / 255;
-            const b = imageData[i + 2] / 255;
+            const rVal = imageData[i];
+            const gVal = imageData[i + 1];
+            const bVal = imageData[i + 2];
+
+            const r = rVal / 255;
+            const g = gVal / 255;
+            const b = bVal / 255;
 
             const max = Math.max(r, g, b);
             const min = Math.min(r, g, b);
             const delta = max - min;
             const lightness = (max + min) / 2;
 
-            // Skip near-black, near-white, and near-grey pixels
-            if (delta < 0.15 || lightness < 0.1 || lightness > 0.92) continue;
+            let saturation = 0;
+            if (max > 0 && max !== min) {
+                saturation = delta / (1 - Math.abs(2 * lightness - 1));
+            }
 
-            let hue = 0;
-            if (delta > 0) {
+            const isNeutral = (delta < 0.15 || lightness < 0.1 || lightness > 0.92);
+
+            let bucketIndex = 0;
+            if (isNeutral) {
+                // Neutral buckets (12 to 15) based on lightness
+                if (lightness >= 0.75) {
+                    bucketIndex = 12; // White/Light
+                } else if (lightness >= 0.5) {
+                    bucketIndex = 13; // Light Grey
+                } else if (lightness >= 0.25) {
+                    bucketIndex = 14; // Dark Grey
+                } else {
+                    bucketIndex = 15; // Black
+                }
+            } else {
+                // Vibrant buckets (0 to 11) based on hue
+                let hue = 0;
                 if (max === r) hue = ((g - b) / delta) % 6;
                 else if (max === g) hue = (b - r) / delta + 2;
                 else hue = (r - g) / delta + 4;
                 hue = (hue * 60 + 360) % 360;
+                bucketIndex = Math.floor(hue / 30) % 12;
             }
 
-            const saturation = delta / (1 - Math.abs(2 * lightness - 1));
-            const bucketIndex = Math.floor(hue / 30) % 12;
             const bucket = buckets[bucketIndex];
-            bucket.r += imageData[i];
-            bucket.g += imageData[i + 1];
-            bucket.b += imageData[i + 2];
+            bucket.r += rVal;
+            bucket.g += gVal;
+            bucket.b += bVal;
             bucket.count++;
             bucket.satSum += saturation;
         }
 
-        // Sort by (count * average saturation) to pick vivid dominant colors
-        let sorted = buckets
+        // Sort buckets by score (satSum + count * 0.05)
+        const sorted = buckets
             .filter(b => b.count > 0)
             .map(b => ({
                 r: Math.round(b.r / b.count),
                 g: Math.round(b.g / b.count),
                 b: Math.round(b.b / b.count),
-                score: b.count * (b.satSum / b.count)
+                score: b.satSum + b.count * 0.05
             }))
             .sort((a, b) => b.score - a.score);
-
-        // Fallback for greyscale or low saturation images
-        if (sorted.length < 2) {
-            const greyBuckets = Array.from({ length: 4 }, () => ({ r: 0, g: 0, b: 0, count: 0 }));
-            for (let i = 0; i < imageData.length; i += 4) {
-                const r = imageData[i];
-                const g = imageData[i + 1];
-                const b = imageData[i + 2];
-                const avg = (r + g + b) / 3;
-
-                const bucketIdx = Math.min(3, Math.floor(avg / 64));
-                const bucket = greyBuckets[bucketIdx];
-                bucket.r += r;
-                bucket.g += g;
-                bucket.b += b;
-                bucket.count++;
-            }
-
-            const sortedGreys = greyBuckets
-                .filter(b => b.count > 0)
-                .map(b => ({
-                    r: Math.round(b.r / b.count),
-                    g: Math.round(b.g / b.count),
-                    b: Math.round(b.b / b.count),
-                    score: b.count
-                }))
-                .sort((a, b) => b.score - a.score);
-
-            sorted = [...sorted, ...sortedGreys];
-        }
 
         // Return top 4 colors for the palette
         return sorted.slice(0, 4).map(c => ({ r: c.r, g: c.g, b: c.b }));
@@ -970,15 +960,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                 const wText = cleanSpanText(node.textContent);
                                 if (wText !== '') {
-                                    if (lastWord &&
-                                        !lastWord.text.endsWith(' ') &&
-                                        !lastWord.text.endsWith('\u00A0') &&
-                                        !wText.startsWith(' ') &&
-                                        !wText.startsWith('\u00A0') &&
-                                        !CJK_REGEX.test(lastWord.text) &&
-                                        !CJK_REGEX.test(wText)) {
-                                        lastWord.text += ' ';
-                                    }
                                     const wordObj = { text: wText, time: wTime, endTime: wEndTime, isBacking };
                                     words.push(wordObj);
                                     lastWord = wordObj;
@@ -988,8 +969,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         } else if (node.nodeType === 3) { // Text node
                             const text = node.textContent;
-                            const isFormattingWhitespace = /[\r\n]/.test(text) && /^\s*$/.test(text);
-                            if (!isFormattingWhitespace && lastWord && /\s/.test(text)) {
+                            if (lastWord && /\s/.test(text)) {
                                 if (!lastWord.text.endsWith(' ') &&
                                     !lastWord.text.endsWith('\u00A0') &&
                                     !CJK_REGEX.test(lastWord.text)) {
@@ -1485,19 +1465,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (let i = 0; i < lyric.words.length; i++) {
                     const w = lyric.words[i];
                     const rawText = w.text;
-                    const parts = isWordByWord ? rawText.trim().split(/\s+/) : tokenizeText(rawText);
-                    if (parts.length > 0) {
-                        const duration = w.endTime - w.time;
-                        const partDuration = duration / parts.length;
-                        const endsWithSpace = rawText.endsWith(' ') || rawText.endsWith('\u00A0');
-                        for (let k = 0; k < parts.length; k++) {
-                            const isLast = (k === parts.length - 1);
-                            items.push({
-                                text: parts[k] + (isWordByWord && (!isLast || endsWithSpace) ? ' ' : ''),
-                                time: w.time + k * partDuration,
-                                endTime: w.time + (k + 1) * partDuration,
-                                isBacking: w.isBacking
-                            });
+                    if (isWordByWord) {
+                        const startsWithSpace = /^\s/.test(rawText);
+                        const endsWithSpace = /\s$/.test(rawText);
+                        const parts = rawText.trim().split(/\s+/);
+                        if (parts.length > 0 && parts[0] !== '') {
+                            const duration = w.endTime - w.time;
+                            const partDuration = duration / parts.length;
+                            for (let k = 0; k < parts.length; k++) {
+                                const isFirst = (k === 0);
+                                const isLast = (k === parts.length - 1);
+                                let itemText = parts[k];
+                                if (isFirst && startsWithSpace) {
+                                    itemText = ' ' + itemText;
+                                }
+                                if (!isLast || endsWithSpace) {
+                                    itemText = itemText + ' ';
+                                }
+                                items.push({
+                                    text: itemText,
+                                    time: w.time + k * partDuration,
+                                    endTime: w.time + (k + 1) * partDuration,
+                                    isBacking: w.isBacking
+                                });
+                            }
+                        }
+                    } else {
+                        const parts = tokenizeText(rawText);
+                        if (parts.length > 0) {
+                            const duration = w.endTime - w.time;
+                            const partDuration = duration / parts.length;
+                            for (let k = 0; k < parts.length; k++) {
+                                items.push({
+                                    text: parts[k],
+                                    time: w.time + k * partDuration,
+                                    endTime: w.time + (k + 1) * partDuration,
+                                    isBacking: w.isBacking
+                                });
+                            }
                         }
                     }
                 }
