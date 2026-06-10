@@ -970,6 +970,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                 const wText = cleanSpanText(node.textContent);
                                 if (wText !== '') {
+                                    if (lastWord && 
+                                        !lastWord.text.endsWith(' ') && 
+                                        !lastWord.text.endsWith('\u00A0') &&
+                                        !wText.startsWith(' ') &&
+                                        !wText.startsWith('\u00A0') &&
+                                        !CJK_REGEX.test(lastWord.text) &&
+                                        !CJK_REGEX.test(wText)) {
+                                        lastWord.text += ' ';
+                                    }
                                     const wordObj = { text: wText, time: wTime, endTime: wEndTime, isBacking };
                                     words.push(wordObj);
                                     lastWord = wordObj;
