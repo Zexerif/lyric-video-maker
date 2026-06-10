@@ -109,6 +109,7 @@ body {
     font-weight: 800;
     background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-end));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 1rem;
 }
@@ -138,6 +139,7 @@ header h1 {
     font-weight: 800;
     background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-end));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.5rem;
 }
@@ -475,6 +477,7 @@ textarea:focus {
     margin-bottom: 2rem;
     background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-end));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     text-align: center;
 }
@@ -656,6 +659,7 @@ footer {
     letter-spacing: -0.02em;
     background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-end));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     z-index: 1;
     position: relative;
@@ -752,6 +756,7 @@ footer {
     margin-bottom: 2rem;
     background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-end));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     text-align: center;
 }
