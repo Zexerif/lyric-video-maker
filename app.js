@@ -970,8 +970,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                 const wText = cleanSpanText(node.textContent);
                                 if (wText !== '') {
-                                    if (lastWord && 
-                                        !lastWord.text.endsWith(' ') && 
+                                    if (lastWord &&
+                                        !lastWord.text.endsWith(' ') &&
                                         !lastWord.text.endsWith('\u00A0') &&
                                         !wText.startsWith(' ') &&
                                         !wText.startsWith('\u00A0') &&
@@ -988,7 +988,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         } else if (node.nodeType === 3) { // Text node
                             const text = node.textContent;
-                            if (lastWord && /\s/.test(text)) {
+                            const isFormattingWhitespace = /[\r\n]/.test(text) && /^\s*$/.test(text);
+                            if (!isFormattingWhitespace && lastWord && /\s/.test(text)) {
                                 if (!lastWord.text.endsWith(' ') &&
                                     !lastWord.text.endsWith('\u00A0') &&
                                     !CJK_REGEX.test(lastWord.text)) {
@@ -2494,11 +2495,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lineEndSec = ((line.time + (line.duration || 0)) / 1000).toFixed(3);
                 xml += `      <p begin="${lineStartSec}" end="${lineEndSec}">\n`;
                 const syllabus = line.syllabus || [];
+                const lineText = line.text || '';
                 if (syllabus.length > 0) {
+                    let charIndex = 0;
                     syllabus.forEach(w => {
                         const wStart = (w.time / 1000).toFixed(3);
                         const wEnd = ((w.time + (w.duration || 0)) / 1000).toFixed(3);
-                        const escapedText = (w.text || '')
+                        
+                        let syllableText = w.text || '';
+                        const cleanSyllable = syllableText.trim();
+                        
+                        if (cleanSyllable !== '') {
+                            const pos = lineText.toLowerCase().indexOf(cleanSyllable.toLowerCase(), charIndex);
+                            if (pos !== -1) {
+                                charIndex = pos + cleanSyllable.length;
+                                if (charIndex < lineText.length && /\s/.test(lineText[charIndex])) {
+                                    if (!syllableText.endsWith(' ') && !syllableText.endsWith('\u00A0')) {
+                                        syllableText += ' ';
+                                    }
+                                    charIndex++;
+                                }
+                            }
+                        }
+                        
+                        const escapedText = syllableText
                             .replace(/&/g, "&amp;")
                             .replace(/</g, "&lt;")
                             .replace(/>/g, "&gt;");
