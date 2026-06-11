@@ -34,6 +34,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const backingVocalsSelect = document.getElementById('backingVocalsSelect');
     const bpmVisualizerSelect = document.getElementById('bpmVisualizerSelect');
     const animatePlainLyricsSelect = document.getElementById('animatePlainLyricsSelect');
+    
+    // New UI Elements
+    const lyricAlignmentSelect = document.getElementById('lyricAlignmentSelect');
+    const fontSizeSlider = document.getElementById('fontSizeSlider');
+    const fontSizeValue = document.getElementById('fontSizeValue');
+    const lineSpacingSlider = document.getElementById('lineSpacingSlider');
+    const lineSpacingValue = document.getElementById('lineSpacingValue');
+    const verticalOffsetSlider = document.getElementById('verticalOffsetSlider');
+    const verticalOffsetValue = document.getElementById('verticalOffsetValue');
+    const lyricTransitionSelect = document.getElementById('lyricTransitionSelect');
+    const bgVideoPreview = document.getElementById('bgVideoPreview');
+    const waveformContainer = document.getElementById('waveformContainer');
+    const waveformCanvas = document.getElementById('waveformCanvas');
+    const scrubberHead = document.getElementById('scrubberHead');
+    const resetStyleBtn = document.getElementById('resetStyleBtn');
 
     // DOM selectors for styled upload cards
     const audioUploadCard = document.getElementById('audioUploadCard');
@@ -102,6 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let audioContext = null;
     let audioBuffer = null;
     let audioSource = null;
+    let gainNode = null;
+    let volume = 1.0;
     let lyrics = [];
     let bgImage = null;
     let albumImage = null;
@@ -117,6 +134,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentLyricColor = '#ffffff';
     let currentGlowColor = '#6366f1';
     let currentBgStyle = 'gradient';
+    let currentLyricAlignment = 'left';
+    let currentFontSize = 60;
+    let currentLineSpacing = 1.3;
+    let currentVerticalOffset = 0;
+    let currentLyricTransition = 'slide';
+    
+    // Background Video State
+    let bgVideoUrl = null;
+    let bgVideo = document.createElement('video');
+    bgVideo.muted = true;
+    bgVideo.loop = true;
+    bgVideo.playsInline = true;
+    bgVideo.crossOrigin = "anonymous";
 
     // Material You palette extracted from album cover
     let albumPalette = null; // Array of {r,g,b} objects
@@ -155,6 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
         bgImageBase64 = null;
         albumImageBase64 = null;
         albumPalette = null;
+        bgVideoUrl = null;
+        bgVideo.src = "";
 
         // Reset Card UI States
         if (audioUploadCard) {
@@ -170,6 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
             bgUploadCard.className = 'upload-card image-upload-card';
             bgPreview.style.backgroundImage = '';
             bgPreview.style.display = 'none';
+            bgVideoPreview.style.display = 'none';
+            bgVideoPreview.src = "";
         }
         if (albumUploadCard) {
             albumUploadCard.className = 'upload-card image-upload-card';
@@ -180,6 +214,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset personalization controls to default state
         bgStyleSelect.value = 'gradient';
         fontSelect.value = 'Outfit';
+        lyricAlignmentSelect.value = 'left';
+        fontSizeSlider.value = 60;
+        fontSizeValue.textContent = '60px';
+        lineSpacingSlider.value = 1.3;
+        lineSpacingValue.textContent = '1.3x';
+        verticalOffsetSlider.value = 0;
+        verticalOffsetValue.textContent = '0px';
+        lyricTransitionSelect.value = 'slide';
         lyricColorInput.value = '#ffffff';
         glowColorInput.value = '#6366f1';
         dynamicGlowCheckbox.checked = false;
@@ -235,6 +277,83 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${m}:${String(s).padStart(2, '0')}`;
     }
 
+    function generateWaveform() {
+        if (!audioBuffer) return;
+        waveformContainer.style.display = 'block';
+        
+        const width = waveformContainer.clientWidth || 1000;
+        const height = waveformContainer.clientHeight || 60;
+        waveformCanvas.width = width;
+        waveformCanvas.height = height;
+        
+        const wCtx = waveformCanvas.getContext('2d');
+        const channelData = audioBuffer.getChannelData(0);
+        const step = Math.ceil(channelData.length / width);
+        const amp = height / 2;
+        
+        wCtx.clearRect(0, 0, width, height);
+        
+        // Grab current accent color from root styles
+        let accentColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim();
+        if (!accentColor) {
+            accentColor = 'rgba(99, 102, 241, 0.7)';
+        } else {
+            if (accentColor.startsWith('rgb(')) {
+                accentColor = accentColor.replace('rgb(', 'rgba(').replace(')', ', 0.7)');
+            }
+        }
+        wCtx.fillStyle = accentColor;
+        
+        for (let i = 0; i < width; i++) {
+            let min = 1.0;
+            let max = -1.0;
+            for (let j = 0; j < step; j++) {
+                const datum = channelData[(i * step) + j];
+                if (datum < min) min = datum;
+                if (datum > max) max = datum;
+            }
+            wCtx.fillRect(i, (1 + min) * amp, 1, Math.max(1, (max - min) * amp));
+        }
+    }
+
+    waveformContainer.addEventListener('mousedown', (e) => {
+        if (!audioBuffer) return;
+        const rect = waveformContainer.getBoundingClientRect();
+        
+        const updateScrubber = (clientX) => {
+            const clickX = Math.max(0, Math.min(clientX - rect.left, rect.width));
+            const progress = clickX / rect.width;
+            scrubberHead.style.left = `${progress * 100}%`;
+            return progress * audioBuffer.duration;
+        };
+
+        const newTime = updateScrubber(e.clientX);
+        const wasPlaying = isPlaying || isRecording;
+        
+        if (wasPlaying) {
+            stopPlayback();
+        }
+        
+        pausedTime = newTime;
+        drawFrame(pausedTime);
+        
+        const onMouseMove = (moveEvent) => {
+            pausedTime = updateScrubber(moveEvent.clientX);
+            drawFrame(pausedTime);
+        };
+        
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            if (wasPlaying) {
+                startPlayback();
+            }
+        };
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+
     // Audio processing function
     async function processAudioFile(file) {
         statusMessage.textContent = 'Loading audio...';
@@ -268,6 +387,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 audioSubtitle.textContent = `✅ ${file.name} (${formatDuration(audioBuffer.duration)})`;
                 audioSpinner.style.display = 'none';
             }
+
+            generateWaveform();
 
             updateLyricsFromEditor();
             updateButtons();
@@ -354,30 +475,62 @@ document.addEventListener('DOMContentLoaded', () => {
         saveProgressToLocalStorage();
     }
 
-    // Background processing function
+    // Background processing function (Image or Video)
     async function processBgFile(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            bgImageBase64 = e.target.result;
-            const img = new Image();
-            img.onload = () => {
-                bgImage = img;
-                statusMessage.textContent = 'Background image loaded.';
+        if (file.type.startsWith('video/')) {
+            const url = URL.createObjectURL(file);
+            bgVideoUrl = url;
+            bgVideo.src = url;
+            
+            // Wait for video to load metadata to ensure we can play it
+            bgVideo.onloadedmetadata = () => {
+                statusMessage.textContent = 'Background video loaded.';
                 removeBgBtn.style.display = 'block';
 
                 if (bgUploadCard) {
                     bgUploadCard.classList.add('has-preview');
-                    bgPreview.style.backgroundImage = `url(${bgImageBase64})`;
-                    bgPreview.style.display = 'block';
+                    bgPreview.style.display = 'none'; // hide image preview
+                    bgVideoPreview.src = url;
+                    bgVideoPreview.style.display = 'block';
                     bgSubtitle.textContent = `✅ ${file.name}`;
+                }
+
+                // If currently playing/recording, start video
+                if (isPlaying || isRecording) {
+                    bgVideo.currentTime = (audioContext.currentTime - startTime + pausedTime) % bgVideo.duration;
+                    bgVideo.play();
+                } else {
+                    bgVideo.currentTime = pausedTime % bgVideo.duration;
                 }
 
                 drawFrame(0); // initial draw
                 saveProgressToLocalStorage();
             };
-            img.src = bgImageBase64;
-        };
-        reader.readAsDataURL(file);
+        } else {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                bgImageBase64 = e.target.result;
+                const img = new Image();
+                img.onload = () => {
+                    bgImage = img;
+                    statusMessage.textContent = 'Background image loaded.';
+                    removeBgBtn.style.display = 'block';
+
+                    if (bgUploadCard) {
+                        bgUploadCard.classList.add('has-preview');
+                        bgVideoPreview.style.display = 'none'; // hide video preview
+                        bgPreview.style.backgroundImage = `url(${bgImageBase64})`;
+                        bgPreview.style.display = 'block';
+                        bgSubtitle.textContent = `✅ ${file.name}`;
+                    }
+
+                    drawFrame(0); // initial draw
+                    saveProgressToLocalStorage();
+                };
+                img.src = bgImageBase64;
+            };
+            reader.readAsDataURL(file);
+        }
     }
 
     // Album cover processing function
@@ -452,6 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             drawFrame(0); // initial draw
+            generateWaveform();
             saveProgressToLocalStorage();
         };
         img.onerror = () => {
@@ -610,6 +764,34 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
+    lyricAlignmentSelect.addEventListener('change', (e) => {
+        currentLyricAlignment = e.target.value;
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
+    fontSizeSlider.addEventListener('input', (e) => {
+        currentFontSize = parseInt(e.target.value);
+        fontSizeValue.textContent = `${currentFontSize}px`;
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
+    lineSpacingSlider.addEventListener('input', (e) => {
+        currentLineSpacing = parseFloat(e.target.value);
+        lineSpacingValue.textContent = `${currentLineSpacing.toFixed(1)}x`;
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
+    verticalOffsetSlider.addEventListener('input', (e) => {
+        currentVerticalOffset = parseInt(e.target.value);
+        verticalOffsetValue.textContent = `${currentVerticalOffset}px`;
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
+    lyricTransitionSelect.addEventListener('change', (e) => {
+        currentLyricTransition = e.target.value;
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+
     lyricColorInput.addEventListener('input', (e) => {
         currentLyricColor = e.target.value;
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
@@ -652,6 +834,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bpmVisualizerSelect) {
         bpmVisualizerSelect.addEventListener('change', () => {
             drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+        });
+    }
+
+    if (resetStyleBtn) {
+        resetStyleBtn.addEventListener('click', () => {
+            // Reset only advanced style state variables
+            currentFontSize = 60;
+            currentLineSpacing = 1.3;
+            currentVerticalOffset = 0;
+
+            // Reset only advanced style UI control values
+            fontSizeSlider.value = 60;
+            fontSizeValue.textContent = '60px';
+            lineSpacingSlider.value = 1.3;
+            lineSpacingValue.textContent = '1.3x';
+            verticalOffsetSlider.value = 0;
+            verticalOffsetValue.textContent = '0px';
+
+            // Trigger redraw canvas and save progress
+            drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+            saveProgressToLocalStorage();
         });
     }
 
@@ -774,25 +977,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
         statusMessage.textContent = 'Album cover removed.';
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+        generateWaveform();
         saveProgressToLocalStorage();
     });
+
+    // Volume control slider handler
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeValue = document.getElementById('volumeValue');
+    if (volumeSlider) {
+        volumeSlider.addEventListener('input', (e) => {
+            volume = parseFloat(e.target.value);
+            if (volumeValue) {
+                volumeValue.textContent = Math.round(volume * 100) + '%';
+            }
+            if (gainNode && audioContext) {
+                gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+            }
+        });
+    }
 
     // Drag and Drop global handlers
     let dragCounter = 0;
 
+    function isFileDrag(e) {
+        return e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files');
+    }
+
     window.addEventListener('dragenter', (e) => {
         e.preventDefault();
+        if (!isFileDrag(e)) return;
         dragCounter++;
         dropOverlay.classList.add('active');
     });
 
     window.addEventListener('dragover', (e) => {
         e.preventDefault();
+        if (!isFileDrag(e)) return;
         dropOverlay.classList.add('active');
     });
 
     window.addEventListener('dragleave', (e) => {
         e.preventDefault();
+        if (!isFileDrag(e)) return;
         dragCounter--;
         if (dragCounter === 0) {
             dropOverlay.classList.remove('active');
@@ -801,6 +1027,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('drop', (e) => {
         e.preventDefault();
+        if (!isFileDrag(e)) return;
         dragCounter = 0;
         dropOverlay.classList.remove('active');
 
@@ -1045,7 +1272,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Smooth the index transition for silky smooth UI and color shifts
         // Lower factor = slower, more atmospheric transitions
         const indexDiff = currentIndex - smoothedIndex;
-        smoothedIndex += indexDiff * 0.04;
+        if (currentLyricTransition === 'instant') {
+            smoothedIndex = currentIndex;
+        } else {
+            smoothedIndex += indexDiff * 0.04;
+        }
 
         // Calculate active glow color (either custom or dynamic based on album palette)
         let activeGlowColor = currentGlowColor;
@@ -1232,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
-        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.3.1`, 40, 40);
+        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.4.0`, 40, 40);
         ctx.restore();
 
         // Draw Custom Credits (multiple rows flowing down from the artist)
@@ -1456,11 +1687,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (lyrics.length === 0) return;
 
-        // Draw Lyrics (Right Side, Left Aligned)
-        ctx.textAlign = 'left';
+        // Draw Lyrics Setup
+        ctx.textAlign = currentLyricAlignment;
         ctx.textBaseline = 'middle';
-        const lyricX = 850; // Starting point for lyrics on the right
-        const centerY = canvas.height / 2;
+        
+        let lyricX = 850; 
+        let layoutWidth = canvas.width - 850;
+        if (!albumImage && currentBgStyle !== 'albumBlur' && currentBgStyle !== 'materialYou') {
+            layoutWidth = canvas.width - 100;
+            lyricX = 50;
+        }
+        
+        if (currentLyricAlignment === 'center') {
+            lyricX = lyricX + layoutWidth / 2;
+        } else if (currentLyricAlignment === 'right') {
+            lyricX = lyricX + layoutWidth - 50;
+        }
+        
+        const centerY = canvas.height / 2 + currentVerticalOffset;
 
         function getWrappedLines(context, lyric, maxWidth, font) {
             const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
@@ -1562,9 +1806,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const defaultFont = font;
+            const backingFontSize = Math.round(currentFontSize * 0.73);
             const backingFont = font.includes('bold')
-                ? font.replace('bold', '500').replace('60px', '44px')
-                : font.replace('60px', '44px');
+                ? font.replace('bold', '500').replace(`${currentFontSize}px`, `${backingFontSize}px`)
+                : font.replace(`${currentFontSize}px`, `${backingFontSize}px`);
 
             const useBackingStyle = (backingVocalsMode === 'styled');
             const activeBackingFont = useBackingStyle ? backingFont : defaultFont;
@@ -1629,10 +1874,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function drawWrappedLines(context, lyric, wrappedResult, x, y, isCurrent, currentTime, opacity) {
-            const defaultFont = `bold 60px "${currentFont}", sans-serif`;
+            const defaultFont = `bold ${currentFontSize}px "${currentFont}", sans-serif`;
+            const backingFontSize = Math.round(currentFontSize * 0.73);
             const backingFont = defaultFont.includes('bold')
-                ? defaultFont.replace('bold', '500').replace('60px', '44px')
-                : defaultFont.replace('60px', '44px');
+                ? defaultFont.replace('bold', '500').replace(`${currentFontSize}px`, `${backingFontSize}px`)
+                : defaultFont.replace(`${currentFontSize}px`, `${backingFontSize}px`);
 
             const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
             const useBackingStyle = (backingVocalsMode === 'styled');
@@ -1640,8 +1886,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const mainLines = wrappedResult.mainLines;
             const backingLines = wrappedResult.backingLines;
 
-            const mainLineHeight = 60 * 1.3;
-            const backingLineHeight = (useBackingStyle ? 44 : 60) * 1.3;
+            const mainLineHeight = currentFontSize * currentLineSpacing;
+            const backingLineHeight = (useBackingStyle ? backingFontSize : currentFontSize) * currentLineSpacing;
             const gapBetween = (mainLines.length > 0 && backingLines.length > 0) ? 15 : 0;
 
             const linesToDraw = [];
@@ -1687,6 +1933,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const item = line.items[j];
                     lineText += ' '.repeat(item.leadingSpaces) + item.renderText + ' '.repeat(item.trailingSpaces);
                 }
+
+                // Calculate alignment offset for active tracking/clipping
+                const textWidth = context.measureText(lineText).width;
+                let startX = x;
+                if (currentLyricAlignment === 'center') startX = x - textWidth / 2;
+                else if (currentLyricAlignment === 'right') startX = x - textWidth;
 
                 const isStyledBacking = drawItem.isBacking && useBackingStyle;
 
@@ -1743,7 +1995,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const isFullyActive = (lastItemProgress >= 1);
                         if (!isFullyActive) {
                             context.beginPath();
-                            context.rect(x - blurRadius * 2, lineY - drawItem.lineHeight, activeWidth + blurRadius * 2, drawItem.lineHeight * 2);
+                            context.rect(startX - blurRadius * 2, lineY - drawItem.lineHeight, activeWidth + blurRadius * 2, drawItem.lineHeight * 2);
                             context.clip();
                         }
 
@@ -1782,19 +2034,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const wrappedLinesArr = new Array(lyrics.length);
 
         // 1. Calculate height and wrap lines for all lyrics
+        const lyricFont = `bold ${currentFontSize}px "${currentFont}", sans-serif`;
+        const backingFontSize = Math.round(currentFontSize * 0.73);
+
         for (let j = 0; j < lyrics.length; j++) {
             const lyric = lyrics[j];
 
-            // Wrap lines using a completely static font size (60px) to prevent layout/wrap jitter
-            const font = `bold 60px "${currentFont}", sans-serif`;
-
-            const wrapped = getWrappedLines(ctx, lyric, 870, font);
+            const wrapped = getWrappedLines(ctx, lyric, layoutWidth - 40, lyricFont);
             wrappedLinesArr[j] = wrapped;
 
             const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
             const useBackingStyle = (backingVocalsMode === 'styled');
-            const mainLineHeight = 60 * 1.3;
-            const backingLineHeight = (useBackingStyle ? 44 : 60) * 1.3;
+            const mainLineHeight = currentFontSize * currentLineSpacing;
+            const backingLineHeight = (useBackingStyle ? backingFontSize : currentFontSize) * currentLineSpacing;
             const gapBetween = (wrapped.mainLines.length > 0 && wrapped.backingLines.length > 0) ? 15 : 0;
 
             heights[j] = wrapped.mainLines.length * mainLineHeight + wrapped.backingLines.length * backingLineHeight + gapBetween;
@@ -1802,7 +2054,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. Sequential layout starting at y = 0
         yPositions[0] = 0;
-        const gap = 60; // comfortable gap between lyric blocks
+        const gap = currentFontSize * 1.5; // comfortable gap between lyric blocks
         for (let j = 1; j < lyrics.length; j++) {
             yPositions[j] = yPositions[j - 1] + heights[j - 1] / 2 + heights[j] / 2 + gap;
         }
@@ -1826,23 +2078,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 5. Draw visible lyrics
-        const drawRange = 4;
+        const drawRange = 5;
         const smoothCurrentIndex = Math.round(smoothedIndex);
         for (let i = Math.max(0, smoothCurrentIndex - drawRange); i <= Math.min(lyrics.length - 1, smoothCurrentIndex + drawRange); i++) {
             const lyric = lyrics[i];
             const distance = i - smoothedIndex;
             const absDistance = Math.abs(distance);
-            const opacity = Math.max(0, 1 - absDistance * 0.25);
-            const scale = Math.max(0.7, 1 - absDistance * 0.1);
-            const yPos = yPositions[i];
+            
+            // Apply Transition Effects
+            let opacity = Math.max(0, 1 - absDistance * 0.25);
+            let scale = 1;
+            let drawY = yPositions[i];
+            let blurEffect = 0;
+
+            if (currentLyricTransition === 'slide') {
+                scale = Math.max(0.7, 1 - absDistance * 0.1);
+                // In slide transition, earlier items slide up
+                if (distance > 0) drawY += distance * 50; // Upcoming slide from below
+                else drawY -= absDistance * 20; // Past slide up
+            } else if (currentLyricTransition === 'blur') {
+                opacity = Math.max(0, 1 - absDistance * 0.35);
+                blurEffect = absDistance * 10;
+            } else if (currentLyricTransition === 'fade') {
+                opacity = Math.max(0, 1 - absDistance * 0.4);
+            } else {
+                // instant
+                opacity = absDistance < 0.5 ? 1 : 0;
+            }
 
             if (opacity > 0) {
                 ctx.save();
-                ctx.translate(lyricX, yPos);
+                ctx.translate(lyricX, drawY);
                 ctx.scale(scale, scale);
 
-                // Use the exact same static 60px font size so scaling is clean and matches wrapping
-                ctx.font = `bold 60px "${currentFont}", sans-serif`;
+                if (blurEffect > 0) {
+                    ctx.filter = `blur(${blurEffect}px)`;
+                }
+
+                ctx.font = lyricFont;
 
                 const weight = Math.max(0, 1 - absDistance);
                 ctx.shadowBlur = 20 * opacity * weight;
@@ -1872,6 +2145,12 @@ document.addEventListener('DOMContentLoaded', () => {
             progressBar.style.width = `${Math.min(100, progress)}%`;
         }
 
+        // Update waveform scrubber
+        if (audioBuffer && !isRestoring) {
+            const progress = (currentTime / audioBuffer.duration) * 100;
+            scrubberHead.style.left = `${Math.min(100, progress)}%`;
+        }
+
         if (currentTime >= audioBuffer.duration) {
             stopPlayback();
         } else {
@@ -1887,8 +2166,11 @@ document.addEventListener('DOMContentLoaded', () => {
         audioSource = audioContext.createBufferSource();
         audioSource.buffer = audioBuffer;
 
-        // Setup nodes
-        audioSource.connect(audioContext.destination);
+        // Setup nodes with volume control
+        gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+        audioSource.connect(gainNode);
+        gainNode.connect(audioContext.destination);
 
         startTime = audioContext.currentTime;
         audioSource.start(0, pausedTime);
@@ -1995,7 +2277,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Also connect the original audioSource to the original audioContext so the user can hear it while it records
         audioSource = audioContext.createBufferSource();
         audioSource.buffer = audioBuffer;
-        audioSource.connect(audioContext.destination);
+        gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+        audioSource.connect(gainNode);
+        gainNode.connect(audioContext.destination);
 
         // Get canvas visual stream with user-selected frame rate
         const fpsSelect = document.getElementById('exportFpsSelect');
@@ -2062,7 +2347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 exportBtn.disabled = false;
                 playBtn.disabled = false;
                 progressContainer.style.display = 'none';
-                statusMessage.textContent = 'Video generated and downloaded!';
+                statusMessage.innerHTML = 'Video generated and downloaded! 🎉 If you like this app, please <a href="https://github.com/Zexerif/lyric-video-maker" target="_blank" rel="noopener" style="color: var(--theme-secondary); text-decoration: underline; font-weight: bold;">star it on GitHub</a>!';
             };
 
             // Start recording and playback
