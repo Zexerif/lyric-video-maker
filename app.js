@@ -30,7 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const songTitleInput = document.getElementById('songTitleInput');
     const songArtistInput = document.getElementById('songArtistInput');
     const songKeyInput = document.getElementById('songKeyInput');
-    const songBpmInput = document.getElementById('songBpmInput');
+    const bpmList = document.getElementById('bpmList');
+    const addBpmBtn = document.getElementById('addBpmBtn');
+    let bpmMarkers = [{ time: 0, bpm: 0 }];
     const backingVocalsSelect = document.getElementById('backingVocalsSelect');
     const bpmVisualizerSelect = document.getElementById('bpmVisualizerSelect');
     const animatePlainLyricsSelect = document.getElementById('animatePlainLyricsSelect');
@@ -48,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const waveformContainer = document.getElementById('waveformContainer');
     const waveformCanvas = document.getElementById('waveformCanvas');
     const scrubberHead = document.getElementById('scrubberHead');
+    const scrubberTime = document.getElementById('scrubberTime');
     const resetStyleBtn = document.getElementById('resetStyleBtn');
 
     // DOM selectors for styled upload cards
@@ -178,7 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
         songTitleInput.value = '';
         songArtistInput.value = '';
         songKeyInput.value = '';
-        songBpmInput.value = '';
+        bpmMarkers = [{ time: 0, bpm: 0 }];
+        if (typeof renderBpmList === 'function') renderBpmList();
 
         bgImage = null;
         albumImage = null;
@@ -323,8 +327,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const updateScrubber = (clientX) => {
             const clickX = Math.max(0, Math.min(clientX - rect.left, rect.width));
             const progress = clickX / rect.width;
+            const time = progress * audioBuffer.duration;
             scrubberHead.style.left = `${progress * 100}%`;
-            return progress * audioBuffer.duration;
+            if (scrubberTime) {
+                scrubberTime.textContent = formatTime(time);
+                // Flip label to left side when near the right edge
+                scrubberTime.style.left = progress > 0.85 ? 'auto' : '50%';
+                scrubberTime.style.right = progress > 0.85 ? '4px' : 'auto';
+                scrubberTime.style.transform = progress > 0.85 ? 'none' : 'translateX(-50%)';
+            }
+            return time;
         };
 
         const newTime = updateScrubber(e.clientX);
@@ -429,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Calculate duration and auto-generate word-by-word highlights if missing
-            const shouldAnimatePlain = animatePlainLyricsSelect && animatePlainLyricsSelect.value === 'on';
+            const animSelect = animatePlainLyricsSelect ? animatePlainLyricsSelect.value : 'default';
             for (let i = 0; i < lyrics.length; i++) {
                 const current = lyrics[i];
                 const next = lyrics[i + 1];
@@ -441,7 +453,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     current.duration = 5.0;
                 }
 
-                if (!current.words && shouldAnimatePlain) {
+                if (animSelect === 'off') {
+                    current.words = null;
+                } else if (animSelect === 'on') {
                     const tokens = tokenizeText(current.text);
                     const partDuration = current.duration / tokens.length;
                     current.words = [];
@@ -923,9 +937,141 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
     });
 
-    songBpmInput.addEventListener('input', () => {
-        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
-    });
+    function formatDuration(secs) {
+        const s = Math.max(0, secs);
+        const m = Math.floor(s / 60);
+        const ss = Math.floor(s % 60).toString().padStart(2, '0');
+        return `${m}:${ss}`;
+    }
+
+    function formatTime(secs) {
+        const s = Math.max(0, secs);
+        const m = Math.floor(s / 60);
+        const ss = Math.floor(s % 60).toString().padStart(2, '0');
+        const t = Math.floor((s % 1) * 10);
+        return `${m}:${ss}.${t}`;
+    }
+
+    function renderBpmList() {
+        if (!bpmList) return;
+        bpmList.innerHTML = '';
+        bpmMarkers.sort((a, b) => a.time - b.time);
+
+        bpmMarkers.forEach((marker, index) => {
+            const isFirst = index === 0;
+
+            const row = document.createElement('div');
+            row.className = 'bpm-row';
+
+            // Time badge
+            const timeBadge = document.createElement('div');
+            timeBadge.className = 'bpm-time' + (isFirst ? ' is-start' : '');
+            timeBadge.textContent = isFirst ? 'Start' : formatDuration(marker.time);
+
+            // BPM input
+            const bpmInput = document.createElement('input');
+            bpmInput.type = 'number';
+            bpmInput.min = '20';
+            bpmInput.max = '300';
+            bpmInput.className = 'bpm-input';
+            bpmInput.placeholder = '120';
+            bpmInput.value = marker.bpm > 0 ? marker.bpm : '';
+
+            bpmInput.addEventListener('input', (e) => {
+                marker.bpm = parseFloat(e.target.value) || 0;
+                drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+                saveProgressToLocalStorage();
+            });
+
+            // Remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'bpm-remove-btn';
+            removeBtn.title = 'Remove this BPM marker';
+            removeBtn.textContent = '✕';
+            removeBtn.style.visibility = isFirst ? 'hidden' : 'visible';
+
+            if (!isFirst) {
+                removeBtn.addEventListener('click', () => {
+                    bpmMarkers.splice(index, 1);
+                    renderBpmList();
+                    drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+                    saveProgressToLocalStorage();
+                });
+            }
+
+            row.appendChild(timeBadge);
+            row.appendChild(bpmInput);
+            row.appendChild(removeBtn);
+            bpmList.appendChild(row);
+        });
+    }
+
+    if (addBpmBtn) {
+        addBpmBtn.addEventListener('click', () => {
+            const ct = isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : pausedTime;
+            const exists = bpmMarkers.find(m => Math.abs(m.time - ct) < 0.1);
+            if (!exists) {
+                const { bpm } = getBeatInfo(ct, bpmMarkers);
+                bpmMarkers.push({ time: ct, bpm: bpm > 0 ? bpm : 120 });
+                bpmMarkers.sort((a, b) => a.time - b.time);
+                renderBpmList();
+                saveProgressToLocalStorage();
+                // Briefly flash the new row to draw attention
+                const rows = bpmList.querySelectorAll('.bpm-row');
+                const newIdx = bpmMarkers.findIndex(m => Math.abs(m.time - ct) < 0.1);
+                const newRow = rows[newIdx];
+                if (newRow) {
+                    newRow.style.background = 'rgba(99,102,241,0.18)';
+                    newRow.style.borderColor = 'rgba(99,102,241,0.4)';
+                    setTimeout(() => {
+                        newRow.style.background = 'rgba(255,255,255,0.04)';
+                        newRow.style.borderColor = 'rgba(255,255,255,0.06)';
+                    }, 600);
+                }
+            }
+        });
+    }
+
+    function syncBpmFromDom() {
+        if (!bpmList) return;
+        const inputs = bpmList.querySelectorAll('.bpm-input');
+        inputs.forEach((input, i) => {
+            if (bpmMarkers[i] !== undefined) {
+                bpmMarkers[i].bpm = parseFloat(input.value) || 0;
+            }
+        });
+    }
+
+    function getBeatInfo(time, markers) {
+        if (!markers || markers.length === 0) return { bpm: 0, phase: 0 };
+        let beats = 0;
+        let currentBpm = markers[0].bpm;
+        let lastTime = 0;
+
+        for (let i = 0; i < markers.length; i++) {
+            const marker = markers[i];
+            if (time < marker.time) {
+                break;
+            }
+            if (i > 0) {
+                const duration = marker.time - lastTime;
+                beats += duration * (currentBpm / 60);
+            }
+            currentBpm = marker.bpm;
+            lastTime = marker.time;
+        }
+
+        const duration = Math.max(0, time - lastTime);
+        beats += duration * (currentBpm / 60);
+
+        return {
+            bpm: currentBpm,
+            phase: beats % 1
+        };
+    }
+
+    renderBpmList();
 
     removeBgBtn.addEventListener('click', () => {
         bgImage = null;
@@ -1463,7 +1609,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
-        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.4.0`, 40, 40);
+        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.5.0`, 40, 40);
         ctx.restore();
 
         // Draw Custom Credits (multiple rows flowing down from the artist)
@@ -1493,9 +1639,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Draw Song Key and BPM Glassmorphic Pill Badge (Top Right)
         const songKey = songKeyInput.value.trim();
-        const songBpmVal = songBpmInput.value.trim();
-        const bpm = parseFloat(songBpmVal);
+        syncBpmFromDom();
+        const beatInfo = getBeatInfo(currentTime, bpmMarkers);
+        const bpm = beatInfo.bpm;
         const hasBpm = !isNaN(bpm) && bpm > 0;
+        const songBpmVal = hasBpm ? Math.round(bpm).toString() : '';
+
         const visStyle = bpmVisualizerSelect ? bpmVisualizerSelect.value : 'ring-contract';
         const showVis = hasBpm && visStyle !== 'none';
 
@@ -1552,8 +1701,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let pulseScale = 0;
             let beatPhase = 0;
             if (showVis) {
-                const beatDuration = 60 / bpm;
-                beatPhase = (currentTime / beatDuration) % 1;
+                beatPhase = beatInfo.phase;
                 pulseScale = Math.exp(-beatPhase * 4);
             }
 
@@ -1715,8 +1863,7 @@ document.addEventListener('DOMContentLoaded', () => {
             context.save();
 
             let items = [];
-            const useWordTimings = !animatePlainLyricsSelect || animatePlainLyricsSelect.value !== 'off';
-            if (lyric.words && lyric.words.length > 0 && useWordTimings) {
+            if (lyric.words && lyric.words.length > 0) {
                 const isWordByWord = lyric.words.length > 1;
                 for (let i = 0; i < lyric.words.length; i++) {
                     const w = lyric.words[i];
@@ -2148,7 +2295,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update waveform scrubber
         if (audioBuffer && !isRestoring) {
             const progress = (currentTime / audioBuffer.duration) * 100;
-            scrubberHead.style.left = `${Math.min(100, progress)}%`;
+            const clampedProgress = Math.min(100, progress);
+            scrubberHead.style.left = `${clampedProgress}%`;
+            if (scrubberTime) {
+                scrubberTime.textContent = formatTime(currentTime);
+                scrubberTime.style.left = clampedProgress > 85 ? 'auto' : '50%';
+                scrubberTime.style.right = clampedProgress > 85 ? '4px' : 'auto';
+                scrubberTime.style.transform = clampedProgress > 85 ? 'none' : 'translateX(-50%)';
+            }
         }
 
         if (currentTime >= audioBuffer.duration) {
@@ -2381,7 +2535,7 @@ document.addEventListener('DOMContentLoaded', () => {
             songTitle: songTitleInput.value,
             songArtist: songArtistInput.value,
             songKey: songKeyInput.value,
-            songBpm: songBpmInput.value,
+            bpmMarkers: bpmMarkers,
             credits: credits,
             bgStyle: bgStyleSelect.value,
             font: fontSelect.value,
@@ -2409,7 +2563,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (project.songTitle !== undefined) songTitleInput.value = project.songTitle;
         if (project.songArtist !== undefined) songArtistInput.value = project.songArtist;
         if (project.songKey !== undefined) songKeyInput.value = project.songKey;
-        if (project.songBpm !== undefined) songBpmInput.value = project.songBpm;
+        
+        if (project.bpmMarkers) {
+            bpmMarkers = project.bpmMarkers;
+        } else if (project.songBpm !== undefined) {
+            bpmMarkers = [{ time: 0, bpm: parseFloat(project.songBpm) || 0 }];
+        }
+        renderBpmList();
 
         // Restore credits
         if (project.credits && Array.isArray(project.credits)) {

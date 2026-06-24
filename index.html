@@ -11,7 +11,7 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&family=Lexend:wght@400;600;800&family=Bebas+Neue&family=Montserrat:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@700&family=Permanent+Marker&family=Pacifico&family=Comic+Neue:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/index.css">
-    <link rel="stylesheet" href="styles.css?v=1.4.0">
+    <link rel="stylesheet" href="styles.css?v=1.5.0">
 </head>
 
 <body>
@@ -193,8 +193,12 @@
                             <input type="text" id="songKeyInput" placeholder="e.g. C# Minor">
                         </div>
                         <div class="input-group" style="flex: 1;">
-                            <label for="songBpmInput">BPM</label>
-                            <input type="number" id="songBpmInput" placeholder="e.g. 120" min="20" max="300">
+                            <div class="bpm-header">
+                                <label>BPM Timeline</label>
+                                <button type="button" id="addBpmBtn" class="bpm-add-btn" title="Scrub the waveform to a point in the song, then click to drop a BPM marker there">+ At Playhead</button>
+                            </div>
+                            <div id="bpmList" class="bpm-list"></div>
+                            <p class="bpm-hint">Scrub the waveform, then click <strong>+ At Playhead</strong> to mark a BPM change.</p>
                         </div>
                     </div>
                 </div>
@@ -360,10 +364,13 @@
                     <button id="playBtn" class="btn primary" disabled>Preview Video</button>
                     
                     <!-- Premium Glassmorphic Volume Control Slider -->
-                    <div class="volume-control" style="display: flex; align-items: center; gap: 0.8rem; background: rgba(0, 0, 0, 0.25); padding: 0.75rem 1.25rem; border-radius: 14px; border: 1px solid var(--glass-border); transition: all 0.3s ease;">
-                        <span style="font-size: 1.1rem; user-select: none; opacity: 0.85;">🔊</span>
-                        <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" style="flex: 1; accent-color: var(--theme-primary); cursor: pointer; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); border: none; outline: none; transition: background 0.3s;">
-                        <span id="volumeValue" style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); width: 2.5rem; text-align: right; font-family: monospace;">100%</span>
+                    <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); padding-left: 0.5rem;">Preview Volume (Final output is always 100%)</span>
+                        <div class="volume-control" style="display: flex; align-items: center; gap: 0.8rem; background: rgba(0, 0, 0, 0.25); padding: 0.75rem 1.25rem; border-radius: 14px; border: 1px solid var(--glass-border); transition: all 0.3s ease;">
+                            <span style="font-size: 1.1rem; user-select: none; opacity: 0.85;">🔊</span>
+                            <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" style="flex: 1; accent-color: var(--theme-primary); cursor: pointer; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); border: none; outline: none; transition: background 0.3s;">
+                            <span id="volumeValue" style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); width: 2.5rem; text-align: right; font-family: monospace;">100%</span>
+                        </div>
                     </div>
 
                     <button id="exportBtn" class="btn secondary" disabled>Generate & Download Video</button>
@@ -382,9 +389,11 @@
                     <canvas id="videoCanvas" width="1920" height="1080"></canvas>
                 </div>
                 
-                <div class="waveform-container" id="waveformContainer" style="display: none; width: 100%; height: 60px; background: rgba(0, 0, 0, 0.25); border-radius: 12px; border: 1px solid var(--glass-border); position: relative; cursor: pointer; overflow: hidden;">
+                <div class="waveform-container" id="waveformContainer" style="display: none; width: 100%; height: 60px; background: rgba(0, 0, 0, 0.25); border-radius: 12px; border: 1px solid var(--glass-border); position: relative; cursor: pointer; overflow: visible; margin-top: 1.4rem;">
                     <canvas id="waveformCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; border-radius: 12px;"></canvas>
-                    <div id="scrubberHead" style="position: absolute; top: 0; left: 0; width: 2px; height: 100%; background: var(--theme-primary); box-shadow: 0 0 10px var(--theme-primary-shadow); z-index: 2; pointer-events: none;"></div>
+                    <div id="scrubberHead" style="position: absolute; top: 0; left: 0; width: 2px; height: 100%; background: var(--theme-primary); box-shadow: 0 0 10px var(--theme-primary-shadow); z-index: 2; pointer-events: none;">
+                        <div id="scrubberTime" style="position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%); background: var(--theme-primary); color: #fff; font-size: 0.68rem; font-family: 'SF Mono','Fira Code','Consolas',monospace; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 5px; white-space: nowrap; pointer-events: none; letter-spacing: 0.03em; box-shadow: 0 2px 8px rgba(0,0,0,0.4);">0:00.0</div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -514,7 +523,7 @@
                 <p class="github-link" style="margin: 0;"><a href="https://github.com/Zexerif/lyric-video-maker" target="_blank"
                         rel="noopener">View on GitHub</a></p>
             </div>
-            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v1.4.0
+            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v1.5.0
             </p>
         </footer>
     </div>
@@ -585,7 +594,7 @@
         <span style="font-family: 'Comic Neue';">a</span>
     </div>
 
-    <script src="app.js?v=1.4.0"></script>
+    <script src="app.js?v=1.5.0"></script>
 </body>
 
 </html>

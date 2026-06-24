@@ -346,6 +346,149 @@ input[type="text"]:focus, input[type="number"]:focus {
     background: rgba(0, 0, 0, 0.3);
 }
 
+/* Hide number spinner arrows everywhere */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
+/* BPM Timeline */
+.bpm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.bpm-header label {
+    margin: 0 !important;
+    font-size: 0.9rem !important;
+    white-space: nowrap;
+}
+
+.bpm-add-btn {
+    flex-shrink: 0;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.22rem 0.6rem;
+    border-radius: 7px;
+    border: 1px solid rgba(99, 102, 241, 0.5);
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--theme-primary);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    white-space: nowrap;
+}
+
+.bpm-add-btn:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.8);
+}
+
+.bpm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    max-height: 160px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.bpm-row {
+    display: grid;
+    grid-template-columns: 44px 1fr 26px;
+    gap: 0.4rem;
+    align-items: center;
+    border-radius: 9px;
+    padding: 0.3rem 0.4rem;
+    transition: background 0.15s;
+}
+
+.bpm-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.bpm-time {
+    font-size: 0.72rem;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-weight: 600;
+    text-align: center;
+    padding: 0.2rem 0.3rem;
+    border-radius: 5px;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.bpm-time.is-start {
+    color: var(--theme-primary);
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.25);
+}
+
+.bpm-input {
+    width: 100% !important;
+    padding: 0.42rem 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.85rem !important;
+    background: rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid var(--glass-border) !important;
+    color: var(--text-main) !important;
+    font-family: 'SF Mono', 'Fira Code', monospace !important;
+    text-align: right;
+    letter-spacing: 0.02em;
+    transition: border-color 0.2s !important;
+}
+
+.bpm-input:focus {
+    outline: none;
+    border-color: var(--theme-primary) !important;
+    background: rgba(0, 0, 0, 0.35) !important;
+}
+
+.bpm-input::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+    font-style: normal;
+}
+
+.bpm-remove-btn {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 6px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.08);
+    color: rgba(239, 68, 68, 0.7);
+    cursor: pointer;
+    font-size: 0.75rem;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    font-family: inherit;
+}
+
+.bpm-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.22);
+    color: rgb(239, 68, 68);
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
+.bpm-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin-top: 0.45rem;
+    opacity: 0.8;
+}
+
 .btn.small {
     width: 100%;
     padding: 0.8rem;
