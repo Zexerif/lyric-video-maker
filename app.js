@@ -331,8 +331,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let min = Math.min(rNorm, gNorm, bNorm);
         let h, s, l = (max + min) / 2;
 
-        if (max === min) {
-            h = s = 0;
+        if (max === min || (max - min) < 0.05) {
+            h = 0;
+            s = 0; // Neutral colors have no hue/saturation
         } else {
             let d = max - min;
             s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -342,13 +343,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 case bNorm: h = (rNorm - gNorm) / d + 4; break;
             }
             h /= 6;
+
+            // Only enforce minSaturation if the original color actually HAD saturation (> 0.08)
+            if (s > 0.08 && s < minSaturation) {
+                s = minSaturation;
+            }
         }
 
         // Clamp lightness to the specified range
         if (l < minLightness) l = minLightness;
         if (l > maxLightness) l = maxLightness;
-        // Keep saturation decent so colors remain vibrant
-        if (s < minSaturation) s = minSaturation;
+
+        if (s === 0) {
+            // Neutral greyscale/white color — return clean grey/white without false hue shifts
+            const val = Math.round(l * 255);
+            return { r: val, g: val, b: val };
+        }
 
         let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
         let p = 2 * l - q;
@@ -943,7 +953,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function extractAlbumPalette(img) {
         const offscreen = document.createElement('canvas');
-        const size = 64; // sample at low resolution for speed
+        const size = 96;
         offscreen.width = size;
         offscreen.height = size;
         const offCtx = offscreen.getContext('2d');
@@ -953,90 +963,84 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             imageData = offCtx.getImageData(0, 0, size, size).data;
         } catch (e) {
-            // CORS-tainted canvas — can't read pixel data
             console.warn('Could not extract palette (CORS):', e);
             return null;
         }
 
-        // 16 buckets: 12 vibrant (based on hue), 4 neutral (based on lightness)
-        const buckets = Array.from({ length: 16 }, () => ({ r: 0, g: 0, b: 0, count: 0, satSum: 0 }));
+        // Divide 360° Hue spectrum into 24 distinct color hue families (15° width each)
+        const hueBuckets = Array.from({ length: 24 }, () => ({ rSum: 0, gSum: 0, bSum: 0, count: 0, satSum: 0 }));
 
         for (let i = 0; i < imageData.length; i += 4) {
-            const rVal = imageData[i];
-            const gVal = imageData[i + 1];
-            const bVal = imageData[i + 2];
+            const r = imageData[i];
+            const g = imageData[i + 1];
+            const b = imageData[i + 2];
+            const a = imageData[i + 3];
 
-            const r = rVal / 255;
-            const g = gVal / 255;
-            const b = bVal / 255;
+            if (a < 128) continue; // Skip transparent pixels
 
-            const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
+            const rN = r / 255, gN = g / 255, bN = b / 255;
+            const max = Math.max(rN, gN, bN), min = Math.min(rN, gN, bN);
             const delta = max - min;
-            const lightness = (max + min) / 2;
+            const l = (max + min) / 2;
 
-            let saturation = 0;
-            if (max > 0 && max !== min) {
-                saturation = delta / (1 - Math.abs(2 * lightness - 1));
+            if (l < 0.12 || l > 0.94) continue; // Skip black shadows & blown out highlights
+            if (delta < 0.08) continue; // Skip neutral greys/whites for color family extraction
+
+            let s = 0;
+            if (max > 0 && delta > 0) {
+                s = delta / (1 - Math.abs(2 * l - 1));
             }
 
-            const isNeutral = (delta < 0.15 || lightness < 0.1 || lightness > 0.92);
+            let h = 0;
+            if (max === rN) h = ((gN - bN) / delta) % 6;
+            else if (max === gN) h = (bN - rN) / delta + 2;
+            else h = (rN - gN) / delta + 4;
+            h = (h * 60 + 360) % 360;
 
-            let bucketIndex = 0;
-            if (isNeutral) {
-                // Neutral buckets (12 to 15) based on lightness
-                if (lightness >= 0.75) {
-                    bucketIndex = 12; // White/Light
-                } else if (lightness >= 0.5) {
-                    bucketIndex = 13; // Light Grey
-                } else if (lightness >= 0.25) {
-                    bucketIndex = 14; // Dark Grey
-                } else {
-                    bucketIndex = 15; // Black
-                }
-            } else {
-                // Vibrant buckets (0 to 11) based on hue
-                let hue = 0;
-                if (max === r) hue = ((g - b) / delta) % 6;
-                else if (max === g) hue = (b - r) / delta + 2;
-                else hue = (r - g) / delta + 4;
-                hue = (hue * 60 + 360) % 360;
-                bucketIndex = Math.floor(hue / 30) % 12;
-            }
-
-            const bucket = buckets[bucketIndex];
-            bucket.r += rVal;
-            bucket.g += gVal;
-            bucket.b += bVal;
+            const bucketIdx = Math.floor(h / 15) % 24;
+            const bucket = hueBuckets[bucketIdx];
+            bucket.rSum += r;
+            bucket.gSum += g;
+            bucket.bSum += b;
             bucket.count++;
-            bucket.satSum += saturation;
+            bucket.satSum += s;
         }
 
-        // Sort buckets by score (satSum + count * 0.05)
-        const sorted = buckets
+        // Sort hue buckets by pixel count (dominant background color family wins!)
+        const sorted = hueBuckets
             .filter(b => b.count > 0)
             .map(b => ({
-                r: Math.round(b.r / b.count),
-                g: Math.round(b.g / b.count),
-                b: Math.round(b.b / b.count),
-                score: b.satSum + b.count * 0.05
+                r: Math.round(b.rSum / b.count),
+                g: Math.round(b.gSum / b.count),
+                b: Math.round(b.bSum / b.count),
+                count: b.count
             }))
-            .sort((a, b) => b.score - a.score);
+            .sort((a, b) => b.count - a.count);
 
-        if (sorted.length === 1) {
-            const c = sorted[0];
-            const avg = (c.r + c.g + c.b) / 3;
-            const shift = avg > 128 ? -30 : 30;
-            sorted.push({
-                r: Math.max(0, Math.min(255, c.r + shift)),
-                g: Math.max(0, Math.min(255, c.g + shift)),
-                b: Math.max(0, Math.min(255, c.b + shift)),
-                score: 0
+        if (sorted.length === 0) return null;
+
+        const palette = [];
+        for (const col of sorted) {
+            const isTooClose = palette.some(p => {
+                const dr = p.r - col.r, dg = p.g - col.g, db = p.b - col.b;
+                return (dr * dr + dg * dg + db * db) < 2500;
+            });
+            if (!isTooClose) {
+                palette.push({ r: col.r, g: col.g, b: col.b });
+                if (palette.length >= 4) break;
+            }
+        }
+
+        if (palette.length === 1) {
+            const c = palette[0];
+            palette.push({
+                r: Math.max(0, Math.min(255, c.r - 40)),
+                g: Math.max(0, Math.min(255, c.g - 40)),
+                b: Math.max(0, Math.min(255, c.b - 40))
             });
         }
 
-        // Return top 4 colors for the palette
-        return sorted.slice(0, 4).map(c => ({ r: c.r, g: c.g, b: c.b }));
+        return palette;
     }
 
     // Input event listeners
@@ -1730,22 +1734,29 @@ document.addEventListener('DOMContentLoaded', () => {
             smoothedIndex += indexDiff * 0.04;
         }
 
-        // Calculate active glow color (either custom or dynamic based on album palette)
-        let activeGlowColor = currentGlowColor;
-        if (dynamicGlowCheckbox && dynamicGlowCheckbox.checked && albumPalette && albumPalette.length > 0) {
+        // Compute live primary background color
+        let liveBgColor = null;
+        if (albumPalette && albumPalette.length > 0) {
             const p = albumPalette;
             const t = smoothedIndex * 0.5;
             const c0 = p[Math.floor(t) % p.length];
             const c1 = p[(Math.floor(t) + 1) % p.length];
             const blend = t % 1;
             const mix = (a, b, f) => Math.round(a + (b - a) * f);
-            const r = mix(c0.r, c1.r, blend);
-            const g = mix(c0.g, c1.g, blend);
-            const b = mix(c0.b, c1.b, blend);
-            const glowAdjusted = adjustColorForReadability(r, g, b, 0.55); // vibrant glow
+            liveBgColor = {
+                r: mix(c0.r, c1.r, blend),
+                g: mix(c0.g, c1.g, blend),
+                b: mix(c0.b, c1.b, blend)
+            };
+        }
+
+        // Calculate active glow color (synced 1:1 with live background gradient color)
+        let activeGlowColor = currentGlowColor;
+        if (dynamicGlowCheckbox && dynamicGlowCheckbox.checked && liveBgColor) {
+            const glowAdjusted = adjustColorForReadability(liveBgColor.r, liveBgColor.g, liveBgColor.b, 0.70, 0.98, 0.5);
             activeGlowColor = `rgb(${glowAdjusted.r}, ${glowAdjusted.g}, ${glowAdjusted.b})`;
 
-            // Sync the color picker input preview swatch with the dynamic color
+            // Sync color picker swatch with live synchronized glow color
             const toHex = (c) => c.toString(16).padStart(2, '0');
             glowColorInput.value = `#${toHex(glowAdjusted.r)}${toHex(glowAdjusted.g)}${toHex(glowAdjusted.b)}`;
         }
@@ -1984,7 +1995,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
-        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.6.0`, 40, 40);
+        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.6.1`, 40, 40);
         ctx.restore();
 
         // Draw Custom Credits (multiple rows flowing down from the artist)
