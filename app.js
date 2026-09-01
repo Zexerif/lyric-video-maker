@@ -46,12 +46,264 @@ document.addEventListener('DOMContentLoaded', () => {
     const verticalOffsetSlider = document.getElementById('verticalOffsetSlider');
     const verticalOffsetValue = document.getElementById('verticalOffsetValue');
     const lyricTransitionSelect = document.getElementById('lyricTransitionSelect');
+    const renderEngineSelect = document.getElementById('renderEngineSelect');
+    const renderEngineWarning = document.getElementById('renderEngineWarning');
     const bgVideoPreview = document.getElementById('bgVideoPreview');
     const waveformContainer = document.getElementById('waveformContainer');
     const waveformCanvas = document.getElementById('waveformCanvas');
     const scrubberHead = document.getElementById('scrubberHead');
     const scrubberTime = document.getElementById('scrubberTime');
     const resetStyleBtn = document.getElementById('resetStyleBtn');
+
+    // i18n Localization
+    let currentLanguage = localStorage.getItem('lyricAppLanguage') || 'en';
+    const langSelect = document.getElementById('langSelect');
+    if (langSelect) {
+        langSelect.value = currentLanguage;
+        langSelect.addEventListener('change', (e) => {
+            currentLanguage = e.target.value;
+            localStorage.setItem('lyricAppLanguage', currentLanguage);
+            applyLanguage(currentLanguage);
+        });
+    }
+
+    function t(key) {
+        if (!window.translations || !window.translations[currentLanguage]) return null;
+        return window.translations[currentLanguage][key] || null;
+    }
+
+    function setText(selector, key) {
+        const el = document.querySelector(selector);
+        if (el && t(key)) el.innerHTML = t(key);
+    }
+
+    function setPlaceholder(selector, key) {
+        const el = document.querySelector(selector);
+        if (el && t(key)) el.placeholder = t(key);
+    }
+
+    function setOptionText(selectSelector, value, key) {
+        const opt = document.querySelector(`${selectSelector} option[value="${value}"]`);
+        if (opt && t(key)) opt.textContent = t(key);
+    }
+
+    function applyLanguage(lang) {
+        if (!window.translations || !window.translations[lang]) return;
+        currentLanguage = lang;
+
+        // Header
+        setText('header h1', 'appTitle');
+        setText('header > p', 'appDesc');
+        setText('.github-star-badge span:not(.badge-star)', 'starGithub');
+
+        // Drop overlay
+        setText('.drop-message h2', 'dropFiles');
+        setText('.drop-message p', 'dropFilesSub');
+
+        // Tabs
+        setText('button[data-tab="tab-files"]', 'tabFiles');
+        setText('button[data-tab="tab-details"]', 'tabInfo');
+        setText('button[data-tab="tab-style"]', 'tabStyle');
+        setText('button[data-tab="tab-editor"]', 'tabLyrics');
+
+        // Files Tab — Section Headers
+        const sec1Header = document.querySelector('#tab-files .input-group:nth-of-type(1) > label');
+        if (sec1Header && t('audioLabel')) sec1Header.textContent = t('audioLabel');
+
+        const sec2Header = document.querySelector('#tab-files .input-group:nth-of-type(2) > label');
+        if (sec2Header && t('lrcLabel')) sec2Header.textContent = t('lrcLabel');
+
+        const sec3Header = document.querySelector('#tab-files .input-group:nth-of-type(3) label');
+        if (sec3Header && t('bgLabel')) sec3Header.textContent = t('bgLabel');
+
+        const sec4Header = document.querySelector('#tab-files .input-group:nth-of-type(4) label');
+        if (sec4Header && t('albumLabel')) sec4Header.textContent = t('albumLabel');
+
+        // Files Tab — Upload Card Titles (.upload-title)
+        setText('#audioUploadCard .upload-title', 'audioTitle');
+        setText('#lrcUploadCard .upload-title', 'lrcTitle');
+        setText('#bgUploadCard .upload-title', 'bgTitle');
+        setText('#albumUploadCard .upload-title', 'albumTitle');
+
+        // Subtitles (only if not showing loaded state)
+        const aSub = document.getElementById('audioSubtitle');
+        if (aSub && !aSub.textContent.startsWith('✅') && !aSub.textContent.startsWith('⏳')) {
+            aSub.textContent = t('audioSub') || 'Click to select or drag audio here';
+        }
+        const lSub = document.getElementById('lrcSubtitle');
+        if (lSub && !lSub.textContent.startsWith('✅')) {
+            lSub.textContent = t('lrcSub') || 'Click to select or drag lyrics here';
+        }
+        const bSub = document.getElementById('bgSubtitle');
+        if (bSub && !bSub.textContent.startsWith('✅')) {
+            bSub.textContent = t('bgSub') || 'Click to select or drag image here';
+        }
+        const alSub = document.getElementById('albumSubtitle');
+        if (alSub && !alSub.textContent.startsWith('✅')) {
+            alSub.textContent = t('albumSub') || 'Click to select or drag image here';
+        }
+
+        setText('#removeBgBtn', 'removeBtn');
+        setText('#removeAlbumBtn', 'removeBtn');
+        setText('label[for="albumUrl"]', 'albumUrlLabel');
+        setPlaceholder('#albumUrl', 'pasteUrl');
+        setText('#loadAlbumUrl', 'loadBtn');
+
+        // Info Tab
+        setText('label[for="itunesSearchInput"]', 'itunesSearchLabel');
+        setPlaceholder('#itunesSearchInput', 'itunesSearchPlaceholder');
+        setText('#itunesSearchBtn', 'searchBtn');
+        setText('label[for="songTitleInput"]', 'songTitleLabel');
+        setPlaceholder('#songTitleInput', 'songTitlePlaceholder');
+        setText('label[for="songArtistInput"]', 'artistLabel');
+        setPlaceholder('#songArtistInput', 'artistPlaceholder');
+        setText('label[for="songKeyInput"]', 'songKeyLabel');
+        setPlaceholder('#songKeyInput', 'songKeyPlaceholder');
+
+        const bpmTimelineLabel = document.querySelector('#bpmList')?.parentElement?.querySelector('label');
+        if (bpmTimelineLabel && t('bpmTimeline')) bpmTimelineLabel.textContent = t('bpmTimeline');
+
+        setText('#addBpmBtn', 'atPlayhead');
+        setText('.bpm-instructions', 'bpmHint');
+        setText('#addCreditBtn', 'addCreditBtn');
+        const creditsLabelEl = document.querySelector('#tab-details .input-group > label:not([for])');
+        if (creditsLabelEl && t('creditsLabel')) creditsLabelEl.textContent = t('creditsLabel');
+
+        // Style Tab
+        setText('label[for="bgStyleSelect"]', 'bgStyleLabel');
+        setOptionText('#bgStyleSelect', 'gradient', 'bgGradient');
+        setOptionText('#bgStyleSelect', 'reactive', 'bgReactive');
+        setOptionText('#bgStyleSelect', 'blur', 'bgBlur');
+        setOptionText('#bgStyleSelect', 'material', 'bgMaterial');
+
+        setText('label[for="bpmVisualizerSelect"]', 'bpmVisLabel');
+        setOptionText('#bpmVisualizerSelect', 'ring-contract', 'bpmVisApproach');
+        setOptionText('#bpmVisualizerSelect', 'sonar', 'bpmVisSonar');
+        setOptionText('#bpmVisualizerSelect', 'flash', 'bpmVisFlash');
+        setOptionText('#bpmVisualizerSelect', 'double-ring', 'bpmVisDouble');
+        setOptionText('#bpmVisualizerSelect', 'off', 'bpmVisOff');
+        const bpmVisHintEl = document.querySelector('#bpmVisualizerSelect')?.nextElementSibling;
+        if (bpmVisHintEl && t('bpmVisHint')) bpmVisHintEl.textContent = t('bpmVisHint');
+
+        setText('label[for="fontSelect"]', 'fontLabel');
+        setText('label[for="lyricAlignmentSelect"]', 'textAlignLabel');
+        setOptionText('#lyricAlignmentSelect', 'left', 'alignLeft');
+        setOptionText('#lyricAlignmentSelect', 'center', 'alignCenter');
+        setOptionText('#lyricAlignmentSelect', 'right', 'alignRight');
+
+        setText('label[for="lyricColor"]', 'textColor');
+        setText('label[for="glowColor"]', 'glowColor');
+        setText('label[for="dynamicGlow"]', 'matchAlbum');
+
+        setText('label[for="lyricTransitionSelect"]', 'transitionLabel');
+        setOptionText('#lyricTransitionSelect', 'instant', 'transInstant');
+        setOptionText('#lyricTransitionSelect', 'fade', 'transFade');
+        setOptionText('#lyricTransitionSelect', 'slide', 'transSlide');
+        setOptionText('#lyricTransitionSelect', 'blur', 'transBlur');
+
+        setText('label[for="backingVocalsSelect"]', 'backingLabel');
+        setOptionText('#backingVocalsSelect', 'styled', 'backingApple');
+        setOptionText('#backingVocalsSelect', 'normal', 'backingNormal');
+        setOptionText('#backingVocalsSelect', 'hide', 'backingHide');
+        const backingHintEl = document.querySelector('#backingVocalsSelect')?.nextElementSibling;
+        if (backingHintEl && t('backingHint')) backingHintEl.textContent = t('backingHint');
+
+        setText('.advanced-styles-toggle span', 'advStyles');
+        const advLabels = document.querySelectorAll('.advanced-styles-panel label');
+        if (advLabels[0]) advLabels[0].textContent = t('fontSize') || advLabels[0].textContent;
+        if (advLabels[1]) advLabels[1].textContent = t('lineSpacing') || advLabels[1].textContent;
+        if (advLabels[2]) advLabels[2].textContent = t('vertOffset') || advLabels[2].textContent;
+        setText('#resetStyleBtn', 'resetStyles');
+
+        // Lyrics Tab
+        setText('label[for="animatePlainLyricsSelect"]', 'karaokeLabel');
+        setOptionText('#animatePlainLyricsSelect', 'default', 'karaokeDefault');
+        setOptionText('#animatePlainLyricsSelect', 'on', 'karaokeOn');
+        setOptionText('#animatePlainLyricsSelect', 'off', 'karaokeOff');
+        
+        const karaokeHintEl = document.getElementById('karaokeHint');
+        if (karaokeHintEl && t('karaokeHint')) karaokeHintEl.textContent = t('karaokeHint');
+
+        setText('label[for="lrcEditor"]', 'editorLabel');
+        setPlaceholder('#lrcEditor', 'editorPlaceholder');
+        setText('#fetchYoulyLyricsBtn', 'fetchLyricsBtn');
+        setText('#exportProjectBtn', 'exportProj');
+        setText('#importProjectBtn', 'importProj');
+
+        // Actions
+        setText('#playBtn', 'previewBtn');
+        setText('#exportBtn', 'exportBtn');
+
+        const volLabel = document.querySelector('.action-buttons .volume-control')?.parentElement?.querySelector('span');
+        if (volLabel && t('previewVol')) volLabel.textContent = t('previewVol');
+
+        // Misc sections
+        setText('.star-panel h3', 'enjoyingTitle');
+        setText('.star-panel p', 'enjoyingDesc');
+        setText('.star-panel a', 'starGithubPanel');
+
+        setText('.instructions h2', 'howToTitle');
+        const stepTitles = document.querySelectorAll('.step-card h3');
+        const stepDescs = document.querySelectorAll('.step-card p');
+        if (stepTitles[0]) stepTitles[0].innerHTML = t('step1Title') || stepTitles[0].innerHTML;
+        if (stepTitles[1]) stepTitles[1].innerHTML = t('step2Title') || stepTitles[1].innerHTML;
+        if (stepTitles[2]) stepTitles[2].innerHTML = t('step3Title') || stepTitles[2].innerHTML;
+        if (stepTitles[3]) stepTitles[3].innerHTML = t('step4Title') || stepTitles[3].innerHTML;
+        if (stepDescs[0]) stepDescs[0].innerHTML = t('step1Desc') || stepDescs[0].innerHTML;
+        if (stepDescs[1]) stepDescs[1].innerHTML = t('step2Desc') || stepDescs[1].innerHTML;
+        if (stepDescs[2]) stepDescs[2].innerHTML = t('step3Desc') || stepDescs[2].innerHTML;
+        if (stepDescs[3]) stepDescs[3].innerHTML = t('step4Desc') || stepDescs[3].innerHTML;
+
+        // Export Modal
+        setText('.modal-content h2', 'modalTitle');
+        setText('.modal-subtitle', 'modalSub');
+        const modalTitles = document.querySelectorAll('.modal-card-title');
+        const modalDescs = document.querySelectorAll('.modal-card-desc');
+        if (modalTitles[0]) modalTitles[0].textContent = t('stayTab') || modalTitles[0].textContent;
+        if (modalDescs[0]) modalDescs[0].textContent = t('stayTabDesc') || modalDescs[0].textContent;
+        if (modalTitles[1]) modalTitles[1].textContent = t('keepActive') || modalTitles[1].textContent;
+        if (modalDescs[1]) modalDescs[1].textContent = t('keepActiveDesc') || modalDescs[1].textContent;
+        if (modalTitles[2]) modalTitles[2].textContent = t('hwFps') || modalTitles[2].textContent;
+        if (modalDescs[2]) modalDescs[2].textContent = t('hwFpsDesc') || modalDescs[2].textContent;
+        if (modalTitles[3]) modalTitles[3].textContent = t('private') || modalTitles[3].textContent;
+        if (modalDescs[3]) modalDescs[3].textContent = t('privateDesc') || modalDescs[3].textContent;
+        setText('label[for="exportResSelect"]', 'modalRes');
+        setOptionText('#exportResSelect', '1080p', 'res1080');
+        setOptionText('#exportResSelect', '720p', 'res720');
+        setOptionText('#exportResSelect', '1440p', 'res1440');
+        setOptionText('#exportResSelect', '4k', 'res4k');
+
+        setText('label[for="exportQualitySelect"]', 'modalQuality');
+        setOptionText('#exportQualitySelect', 'high', 'qualHigh');
+        setOptionText('#exportQualitySelect', 'standard', 'qualStandard');
+        setOptionText('#exportQualitySelect', 'ultra', 'qualUltra');
+        setOptionText('#exportQualitySelect', 'max', 'qualMax');
+
+        setText('label[for="exportFpsSelect"]', 'modalFps');
+        setOptionText('#exportFpsSelect', '30', 'fps30');
+        setOptionText('#exportFpsSelect', '60', 'fps60');
+        setText('#cancelExportBtn', 'cancelBtn');
+        setText('#confirmExportBtn', 'startExportBtn');
+
+        // FAQ Section
+        setText('.faq-panel h2', 'faqTitle');
+        const faqTitles = document.querySelectorAll('.faq-card h3');
+        const faqDescs = document.querySelectorAll('.faq-card p');
+        for (let i = 0; i < 9; i++) {
+            if (faqTitles[i] && t('faq' + (i + 1) + 'Title')) faqTitles[i].textContent = t('faq' + (i + 1) + 'Title');
+            if (faqDescs[i] && t('faq' + (i + 1) + 'Desc')) faqDescs[i].innerHTML = t('faq' + (i + 1) + 'Desc');
+        }
+
+        // Footer
+        setText('footer .disclaimer', 'disclaimer');
+        setText('footer .ai-disclaimer', 'aiDisclaimer');
+        const footerLinks = document.querySelectorAll('footer .github-link a');
+        const svg0 = footerLinks[0]?.querySelector('svg')?.outerHTML || '';
+        if (footerLinks[0] && t('starFooter')) footerLinks[0].innerHTML = svg0 + t('starFooter');
+        if (footerLinks[1] && t('viewGithub')) footerLinks[1].textContent = t('viewGithub');
+    }
+
+
 
     // DOM selectors for styled upload cards
     const audioUploadCard = document.getElementById('audioUploadCard');
@@ -155,7 +407,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let albumPalette = null; // Array of {r,g,b} objects
     let bgImageBase64 = null;
     let albumImageBase64 = null;
+    let cachedBlurredAlbumCanvas = null;
+    let bgOffscreenCanvas = null;
     let isRestoring = false;
+
+    function updateBlurredAlbumCache() {
+        if (!albumImage) {
+            cachedBlurredAlbumCanvas = null;
+            return;
+        }
+        try {
+            const offscreen = document.createElement('canvas');
+            offscreen.width = 1920;
+            offscreen.height = 1080;
+            const oCtx = offscreen.getContext('2d');
+            const scale = Math.max(offscreen.width / albumImage.width, offscreen.height / albumImage.height);
+            const x = (offscreen.width / 2) - (albumImage.width / 2) * scale;
+            const y = (offscreen.height / 2) - (albumImage.height / 2) * scale;
+            oCtx.filter = 'blur(60px) brightness(0.4)';
+            oCtx.drawImage(albumImage, x - 100, y - 100, (albumImage.width * scale) + 200, (albumImage.height * scale) + 200);
+            cachedBlurredAlbumCanvas = offscreen;
+        } catch (e) {
+            console.warn('Offscreen album blur failed:', e);
+            cachedBlurredAlbumCanvas = null;
+        }
+    }
 
     let mediaRecorder = null;
     let recordedChunks = [];
@@ -191,16 +467,18 @@ document.addEventListener('DOMContentLoaded', () => {
         albumPalette = null;
         bgVideoUrl = null;
         bgVideo.src = "";
+        bgOffscreenCanvas = null;
+        cachedBlurredAlbumCanvas = null;
 
         // Reset Card UI States
         if (audioUploadCard) {
             audioUploadCard.className = 'upload-card';
-            audioSubtitle.textContent = 'Click to select or drag audio here';
+            audioSubtitle.textContent = t('audioSub') || 'Click to select or drag audio here';
             audioSpinner.style.display = 'none';
         }
         if (lrcUploadCard) {
             lrcUploadCard.className = 'upload-card';
-            lrcSubtitle.textContent = 'Click to select or drag lyrics here';
+            lrcSubtitle.textContent = t('lrcSub') || 'Click to select or drag lyrics here';
         }
         if (bgUploadCard) {
             bgUploadCard.className = 'upload-card image-upload-card';
@@ -208,11 +486,13 @@ document.addEventListener('DOMContentLoaded', () => {
             bgPreview.style.display = 'none';
             bgVideoPreview.style.display = 'none';
             bgVideoPreview.src = "";
+            bgSubtitle.textContent = t('bgSub') || 'Click to select or drag image here';
         }
         if (albumUploadCard) {
             albumUploadCard.className = 'upload-card image-upload-card';
             albumPreview.style.backgroundImage = '';
             albumPreview.style.display = 'none';
+            albumSubtitle.textContent = t('albumSub') || 'Click to select or drag image here';
         }
 
         // Reset personalization controls to default state
@@ -262,13 +542,13 @@ document.addEventListener('DOMContentLoaded', () => {
         exportBtn.disabled = !(hasAudio && hasLyrics);
 
         if (!hasAudio && hasLyrics) {
-            statusMessage.textContent = `Lyrics loaded (${lyrics.length} lines). Waiting for audio to finish decoding...`;
+            statusMessage.textContent = `${t('lyricsLoaded') || 'Lyrics loaded'} (${lyrics.length} ${t('lines') || 'lines'}). ${t('waitAudio') || 'Waiting for audio to finish decoding...'}`;
             statusMessage.style.color = "#ec4899"; // highlight waiting
         } else if (hasAudio && !hasLyrics) {
-            statusMessage.textContent = "Audio ready. Please upload or type lyrics.";
+            statusMessage.textContent = t('audioReady') || "Audio ready. Please upload or type lyrics.";
             statusMessage.style.color = "#6366f1";
         } else if (hasAudio && hasLyrics) {
-            statusMessage.textContent = `System Ready! (${lyrics.length} lyric lines loaded)`;
+            statusMessage.textContent = `${t('sysReady') || 'System Ready!'} (${lyrics.length} ${t('linesLoaded') || 'lines loaded'})`;
             statusMessage.style.color = "#4ade80"; // green for ready
         }
     }
@@ -368,10 +648,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Audio processing function
     async function processAudioFile(file) {
-        statusMessage.textContent = 'Loading audio...';
+        statusMessage.textContent = t('loadingAudio') || 'Loading audio...';
         if (audioUploadCard) {
             audioUploadCard.className = 'upload-card loading';
-            audioSubtitle.textContent = '⏳ Decoding audio data...';
+            audioSubtitle.textContent = t('decodingAudio') || '⏳ Decoding audio data...';
             audioSpinner.style.display = 'block';
         }
 
@@ -388,30 +668,38 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
+        if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+        }
 
         const arrayBuffer = await file.arrayBuffer();
         try {
-            audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-            statusMessage.textContent = 'Audio loaded successfully.';
+            audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+            statusMessage.textContent = t('audioLoaded') || 'Audio loaded successfully.';
 
             if (audioUploadCard) {
                 audioUploadCard.className = 'upload-card success';
                 audioSubtitle.textContent = `✅ ${file.name} (${formatDuration(audioBuffer.duration)})`;
                 audioSpinner.style.display = 'none';
             }
-
-            generateWaveform();
-
-            updateLyricsFromEditor();
-            updateButtons();
         } catch (err) {
-            statusMessage.textContent = 'Error decoding audio file.';
-            console.error(err);
+            statusMessage.textContent = t('errorDecoding') || 'Error decoding audio file.';
+            console.error('Audio decoding error:', err);
             if (audioUploadCard) {
                 audioUploadCard.className = 'upload-card';
-                audioSubtitle.textContent = '❌ Error decoding audio. Try again.';
+                audioSubtitle.textContent = t('errorDecoding') || '❌ Error decoding audio. Try again.';
                 audioSpinner.style.display = 'none';
             }
+            return;
+        }
+
+        try {
+            generateWaveform();
+            updateLyricsFromEditor();
+            updateButtons();
+            drawFrame(0);
+        } catch (uiErr) {
+            console.error('Post-audio UI render error:', uiErr);
         }
     }
 
@@ -422,6 +710,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (lrcUploadCard) {
             lrcSubtitle.textContent = `✅ ${file.name}`;
+            lrcSubtitle.style.color = 'var(--text-success)';
         }
 
         updateLyricsFromEditor();
@@ -470,18 +759,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            statusMessage.textContent = `Loaded ${lyrics.length} lyric lines.`;
+            statusMessage.textContent = `${t('loaded')} ${lyrics.length} ${t('lyricLines') || 'lyric lines.'}`;
             if (lrcUploadCard) {
                 lrcUploadCard.className = 'upload-card success';
                 if (!lrcSubtitle.textContent.startsWith('✅')) {
-                    lrcSubtitle.textContent = `✅ ${lyrics.length} lines loaded`;
+                    lrcSubtitle.style.color = 'var(--text-success)';
+                    lrcSubtitle.textContent = `✅ ${lyrics.length} ${t('linesLoaded') || 'lines loaded'}`;
                 }
             }
         } else {
-            statusMessage.textContent = 'Enter or upload lyrics to begin.';
+            statusMessage.textContent = t('enterLyrics') || 'Enter or upload lyrics to begin.';
             if (lrcUploadCard) {
                 lrcUploadCard.className = 'upload-card';
-                lrcSubtitle.textContent = 'Click to select or drag lyrics here';
+                lrcSubtitle.style.color = 'var(--text-muted)';
+                lrcSubtitle.textContent = t('lrcSub') || 'Click to select or drag lyrics here';
             }
         }
         updateButtons();
@@ -498,7 +789,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Wait for video to load metadata to ensure we can play it
             bgVideo.onloadedmetadata = () => {
-                statusMessage.textContent = 'Background video loaded.';
+                statusMessage.textContent = t('bgVideoLoaded') || 'Background video loaded.';
                 removeBgBtn.style.display = 'block';
 
                 if (bgUploadCard) {
@@ -527,7 +818,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const img = new Image();
                 img.onload = () => {
                     bgImage = img;
-                    statusMessage.textContent = 'Background image loaded.';
+                    statusMessage.textContent = t('bgImgLoaded') || 'Background image loaded.';
                     removeBgBtn.style.display = 'block';
 
                     if (bgUploadCard) {
@@ -554,6 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
             albumImageBase64 = e.target.result;
             if (albumUploadCard) {
                 albumSubtitle.textContent = `✅ ${file.name}`;
+                albumSubtitle.style.color = 'var(--text-success)';
             }
             loadAlbumFromUrl(albumImageBase64);
             saveProgressToLocalStorage();
@@ -562,14 +854,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadAlbumFromUrl(url) {
-        statusMessage.textContent = 'Loading album cover...';
+        statusMessage.textContent = t('loadingAlbum') || 'Loading album cover...';
         const img = new Image();
+        img.crossOrigin = "anonymous";
         let attempts = 0;
 
         img.onload = () => {
             albumImage = img;
             albumPalette = extractAlbumPalette(img);
-            statusMessage.textContent = 'Album cover loaded.';
+            updateBlurredAlbumCache();
+            statusMessage.textContent = t('albumCoverLoaded') || 'Album cover loaded.';
             removeAlbumBtn.style.display = 'block';
 
             if (albumUploadCard) {
@@ -577,7 +871,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 albumPreview.style.backgroundImage = `url(${url})`;
                 albumPreview.style.display = 'block';
                 if (!albumSubtitle.textContent.startsWith('✅')) {
-                    albumSubtitle.textContent = '✅ Album Art Loaded';
+                    albumSubtitle.style.color = 'var(--text-success)';
+                    albumSubtitle.textContent = t('albumArtLoaded') || '✅ Album Art Loaded';
                 }
             }
 
@@ -629,7 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 img.removeAttribute('crossOrigin');
                 img.src = url; // load original url directly without cache-busting or CORS
             } else {
-                statusMessage.textContent = 'Error loading image URL.';
+                statusMessage.textContent = t('errorImage') || 'Error loading image URL.';
                 console.error('Load Error for:', url);
             }
         };
@@ -1083,10 +1378,11 @@ document.addEventListener('DOMContentLoaded', () => {
             bgUploadCard.classList.remove('has-preview');
             bgPreview.style.backgroundImage = '';
             bgPreview.style.display = 'none';
-            bgSubtitle.textContent = 'Click to select or drag image here';
+            bgSubtitle.style.color = 'var(--text-muted)';
+            bgSubtitle.textContent = t('bgSub') || 'Click to select or drag image here';
         }
 
-        statusMessage.textContent = 'Background image removed.';
+        statusMessage.textContent = t('bgRemoved') || 'Background image removed.';
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
         saveProgressToLocalStorage();
     });
@@ -1103,7 +1399,8 @@ document.addEventListener('DOMContentLoaded', () => {
             albumUploadCard.classList.remove('has-preview');
             albumPreview.style.backgroundImage = '';
             albumPreview.style.display = 'none';
-            albumSubtitle.textContent = 'Click to select or drag image here';
+            albumSubtitle.style.color = 'var(--text-muted)';
+            albumSubtitle.textContent = t('albumSub') || 'Click to select or drag image here';
         }
 
         // Reset dynamic background glow variables to defaults
@@ -1121,7 +1418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         root.style.removeProperty('--theme-element-gradient-start');
         root.style.removeProperty('--theme-element-gradient-end');
 
-        statusMessage.textContent = 'Album cover removed.';
+        statusMessage.textContent = t('albumRemoved') || 'Album cover removed.';
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
         generateWaveform();
         saveProgressToLocalStorage();
@@ -1202,7 +1499,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 processBgFile(file);
             }
         } else {
-            statusMessage.textContent = `Unrecognized file type: ${file.name}`;
+            statusMessage.textContent = `${t('unrecognizedFile') || 'Unrecognized file type'}: ${file.name}`;
         }
     }
 
@@ -1406,6 +1703,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function drawFrame(currentTime) {
+        ctx.save();
+        const renderW = 1920;
+        const renderH = 1080;
+        const scaleX = canvas.width / renderW;
+        const scaleY = canvas.height / renderH;
+        if (scaleX !== 1 || scaleY !== 1) {
+            ctx.scale(scaleX, scaleY);
+        }
+
         // Find current lyric index
         let currentIndex = 0;
         if (lyrics.length > 0) {
@@ -1444,88 +1750,157 @@ document.addEventListener('DOMContentLoaded', () => {
             glowColorInput.value = `#${toHex(glowAdjusted.r)}${toHex(glowAdjusted.g)}${toHex(glowAdjusted.b)}`;
         }
 
+        const isNativeMode = renderEngineSelect && renderEngineSelect.value === 'native';
+
         // Clear background
         if (bgImage) {
             // Draw background covering the canvas
-            const scale = Math.max(canvas.width / bgImage.width, canvas.height / bgImage.height);
-            const x = (canvas.width / 2) - (bgImage.width / 2) * scale;
-            const y = (canvas.height / 2) - (bgImage.height / 2) * scale;
+            const scale = Math.max(renderW / bgImage.width, renderH / bgImage.height);
+            const x = (renderW / 2) - (bgImage.width / 2) * scale;
+            const y = (renderH / 2) - (bgImage.height / 2) * scale;
             ctx.drawImage(bgImage, x, y, bgImage.width * scale, bgImage.height * scale);
 
             // Dark overlay for readability
             ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, renderW, renderH);
         } else if (currentBgStyle === 'albumBlur' && albumImage) {
-            const scale = Math.max(canvas.width / albumImage.width, canvas.height / albumImage.height);
-            const x = (canvas.width / 2) - (albumImage.width / 2) * scale;
-            const y = (canvas.height / 2) - (albumImage.height / 2) * scale;
-            ctx.save();
-            ctx.filter = 'blur(60px) brightness(0.4)';
-            ctx.drawImage(albumImage, x - 100, y - 100, (albumImage.width * scale) + 200, (albumImage.height * scale) + 200);
-            ctx.restore();
-        } else if (currentBgStyle === 'materialYou' && albumPalette && albumPalette.length >= 2) {
-            // --- Material You: Album color reactive background ---
-            // Animate between palette colors based on lyric progress using smooth sine waves
-            const p = albumPalette;
-            const t = smoothedIndex * 0.5; // slow oscillation
-            const pulse = (Math.sin(currentTime * 1.2) * 0.5 + 0.5); // 0..1 breathing pulse
+            if (isNativeMode) {
+                // Native heavy 60px Gaussian blur on target canvas resolution
+                const scale = Math.max(renderW / albumImage.width, renderH / albumImage.height);
+                const x = (renderW / 2) - (albumImage.width / 2) * scale;
+                const y = (renderH / 2) - (albumImage.height / 2) * scale;
+                ctx.save();
+                ctx.filter = 'blur(60px) brightness(0.4)';
+                ctx.drawImage(albumImage, x - 100, y - 100, (albumImage.width * scale) + 200, (albumImage.height * scale) + 200);
+                ctx.restore();
+            } else {
+                if (!cachedBlurredAlbumCanvas) updateBlurredAlbumCache();
+                if (cachedBlurredAlbumCanvas) {
+                    ctx.drawImage(cachedBlurredAlbumCanvas, 0, 0, renderW, renderH);
+                } else {
+                    const scale = Math.max(renderW / albumImage.width, renderH / albumImage.height);
+                    const x = (renderW / 2) - (albumImage.width / 2) * scale;
+                    const y = (renderH / 2) - (albumImage.height / 2) * scale;
+                    ctx.drawImage(albumImage, x, y, albumImage.width * scale, albumImage.height * scale);
+                }
+            }
+        } else if (isNativeMode) {
+            // Native full-res 4K radial gradients directly on main canvas
+            if (currentBgStyle === 'materialYou' && (albumPalette && albumPalette.length >= 2 || albumImage)) {
+                let p = albumPalette || [{ r: 230, g: 150, b: 60 }, { r: 60, g: 140, b: 220 }, { r: 210, g: 70, b: 110 }];
+                const t = smoothedIndex * 0.5;
+                const pulse = (Math.sin(currentTime * 1.2) * 0.5 + 0.5);
 
-            // Pick two colors to blend between, cycling through the palette
-            const c0 = p[Math.floor(t) % p.length];
-            const c1 = p[(Math.floor(t) + 1) % p.length];
-            const c2 = p[(Math.floor(t) + 2) % p.length];
-            const blend = t % 1;
+                const c0 = p[Math.floor(t) % p.length];
+                const c1 = p[(Math.floor(t) + 1) % p.length];
+                const c2 = p[(Math.floor(t) + 2) % p.length];
+                const blend = t % 1;
 
-            // Mix c0 -> c1 for gradient start, c1 -> c2 for end
-            const mix = (a, b, f) => Math.round(a + (b - a) * f);
-            const col0 = { r: mix(c0.r, c1.r, blend), g: mix(c0.g, c1.g, blend), b: mix(c0.b, c1.b, blend) };
-            const col1 = { r: mix(c1.r, c2.r, blend), g: mix(c1.g, c2.g, blend), b: mix(c1.b, c2.b, blend) };
+                const mix = (a, b, f) => Math.round(a + (b - a) * f);
+                const col0 = { r: mix(c0.r, c1.r, blend), g: mix(c0.g, c1.g, blend), b: mix(c0.b, c1.b, blend) };
+                const col1 = { r: mix(c1.r, c2.r, blend), g: mix(c1.g, c2.g, blend), b: mix(c1.b, c2.b, blend) };
+                const darken = (c, f) => `rgb(${Math.round(c.r * f)}, ${Math.round(c.g * f)}, ${Math.round(c.b * f)})`;
 
-            // Tone down to dark Material You surface colors (keep hue, reduce lightness)
-            const darken = (c, f) => `rgb(${Math.round(c.r * f)}, ${Math.round(c.g * f)}, ${Math.round(c.b * f)})`;
+                const radGrad = ctx.createRadialGradient(
+                    renderW * 0.3, renderH * 0.5, 0,
+                    renderW * 0.5, renderH * 0.5, renderW * 0.8
+                );
+                radGrad.addColorStop(0, darken(col0, 0.45 + pulse * 0.1));
+                radGrad.addColorStop(0.5, darken(col1, 0.30));
+                radGrad.addColorStop(1, darken(c2, 0.18));
+                ctx.fillStyle = radGrad;
+                ctx.fillRect(0, 0, renderW, renderH);
 
-            // Radial gradient base – gives the "tonal surface" Material You feel
-            const radGrad = ctx.createRadialGradient(
-                canvas.width * 0.3, canvas.height * 0.5, 0,
-                canvas.width * 0.5, canvas.height * 0.5, canvas.width * 0.8
-            );
-            radGrad.addColorStop(0, darken(col0, 0.25 + pulse * 0.08));
-            radGrad.addColorStop(0.5, darken(col1, 0.12));
-            radGrad.addColorStop(1, darken(c2, 0.06));
-            ctx.fillStyle = radGrad;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Accent orbs — soft blurred color blobs like Material You wallpaper
-            const orbs = [
-                { x: canvas.width * 0.15, y: canvas.height * 0.3, r: 500, c: col0, a: 0.18 + pulse * 0.06 },
-                { x: canvas.width * 0.75, y: canvas.height * 0.6, r: 600, c: col1, a: 0.14 + (1 - pulse) * 0.06 },
-                { x: canvas.width * 0.5, y: canvas.height * 0.1, r: 350, c: c2, a: 0.10 + pulse * 0.04 },
-            ];
-            for (const orb of orbs) {
-                const orbGrad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
-                orbGrad.addColorStop(0, `rgba(${orb.c.r}, ${orb.c.g}, ${orb.c.b}, ${orb.a})`);
-                orbGrad.addColorStop(1, `rgba(${orb.c.r}, ${orb.c.g}, ${orb.c.b}, 0)`);
-                ctx.fillStyle = orbGrad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                const orbs = [
+                    { x: renderW * 0.15, y: renderH * 0.3, r: 500, c: col0, a: 0.32 + pulse * 0.08 },
+                    { x: renderW * 0.75, y: renderH * 0.6, r: 600, c: col1, a: 0.26 + (1 - pulse) * 0.08 },
+                    { x: renderW * 0.5, y: renderH * 0.1, r: 350, c: c2, a: 0.20 + pulse * 0.06 },
+                ];
+                for (const orb of orbs) {
+                    const orbGrad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
+                    orbGrad.addColorStop(0, `rgba(${orb.c.r}, ${orb.c.g}, ${orb.c.b}, ${orb.a})`);
+                    orbGrad.addColorStop(1, `rgba(${orb.c.r}, ${orb.c.g}, ${orb.c.b}, 0)`);
+                    ctx.fillStyle = orbGrad;
+                    ctx.fillRect(0, 0, renderW, renderH);
+                }
+            } else {
+                const gradient = ctx.createLinearGradient(0, 0, renderW, renderH);
+                let hue = currentBgStyle === 'reactive' ? 220 + Math.sin(smoothedIndex * 0.4) * 60 : (currentTime * 10) % 360;
+                gradient.addColorStop(0, `hsl(${hue}, 40%, 15%)`);
+                gradient.addColorStop(1, `hsl(${(hue + 80) % 360}, 50%, 10%)`);
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, renderW, renderH);
             }
         } else {
-            // Default dynamic gradient background
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            let hue;
+            // Use offscreen gradient buffer (960x540) to render gradient & accent orbs 10x faster
+            if (!bgOffscreenCanvas) {
+                bgOffscreenCanvas = document.createElement('canvas');
+                bgOffscreenCanvas.width = 960;
+                bgOffscreenCanvas.height = 540;
+            }
+            const bW = 960;
+            const bH = 540;
+            const bCtx = bgOffscreenCanvas.getContext('2d');
 
-            if (currentBgStyle === 'reactive') {
-                // Use a sine wave to oscillate through colors smoothly based on progress
-                // This prevents the "cut" when hue wraps from 359 to 0
-                hue = 220 + Math.sin(smoothedIndex * 0.4) * 60;
+            if (currentBgStyle === 'materialYou' && (albumPalette && albumPalette.length >= 2 || albumImage)) {
+                let p = albumPalette;
+                if (!p || p.length < 2) {
+                    p = [
+                        { r: 230, g: 150, b: 60 },
+                        { r: 60, g: 140, b: 220 },
+                        { r: 210, g: 70, b: 110 }
+                    ];
+                }
+                const t = smoothedIndex * 0.5;
+                const pulse = (Math.sin(currentTime * 1.2) * 0.5 + 0.5);
+
+                const c0 = p[Math.floor(t) % p.length];
+                const c1 = p[(Math.floor(t) + 1) % p.length];
+                const c2 = p[(Math.floor(t) + 2) % p.length];
+                const blend = t % 1;
+
+                const mix = (a, b, f) => Math.round(a + (b - a) * f);
+                const col0 = { r: mix(c0.r, c1.r, blend), g: mix(c0.g, c1.g, blend), b: mix(c0.b, c1.b, blend) };
+                const col1 = { r: mix(c1.r, c2.r, blend), g: mix(c1.g, c2.g, blend), b: mix(c1.b, c2.b, blend) };
+                const darken = (c, f) => `rgb(${Math.round(c.r * f)}, ${Math.round(c.g * f)}, ${Math.round(c.b * f)})`;
+
+                const radGrad = bCtx.createRadialGradient(
+                    bW * 0.3, bH * 0.5, 0,
+                    bW * 0.5, bH * 0.5, bW * 0.8
+                );
+                radGrad.addColorStop(0, darken(col0, 0.45 + pulse * 0.1));
+                radGrad.addColorStop(0.5, darken(col1, 0.30));
+                radGrad.addColorStop(1, darken(c2, 0.18));
+                bCtx.fillStyle = radGrad;
+                bCtx.fillRect(0, 0, bW, bH);
+
+                const orbs = [
+                    { x: bW * 0.15, y: bH * 0.3, r: 280, c: col0, a: 0.32 + pulse * 0.08 },
+                    { x: bW * 0.75, y: bH * 0.6, r: 340, c: col1, a: 0.26 + (1 - pulse) * 0.08 },
+                    { x: bW * 0.5, y: bH * 0.1, r: 200, c: c2, a: 0.20 + pulse * 0.06 },
+                ];
+                for (const orb of orbs) {
+                    const orbGrad = bCtx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
+                    orbGrad.addColorStop(0, `rgba(${orb.c.r}, ${orb.c.g}, ${orb.c.b}, ${orb.a})`);
+                    orbGrad.addColorStop(1, `rgba(${orb.c.r}, ${orb.c.g}, ${orb.c.b}, 0)`);
+                    bCtx.fillStyle = orbGrad;
+                    bCtx.fillRect(0, 0, bW, bH);
+                }
             } else {
-                // Slowly shifting pulse
-                hue = (currentTime * 10) % 360;
+                const gradient = bCtx.createLinearGradient(0, 0, bW, bH);
+                let hue;
+                if (currentBgStyle === 'reactive') {
+                    hue = 220 + Math.sin(smoothedIndex * 0.4) * 60;
+                } else {
+                    hue = (currentTime * 10) % 360;
+                }
+                gradient.addColorStop(0, `hsl(${hue}, 40%, 15%)`);
+                gradient.addColorStop(1, `hsl(${(hue + 80) % 360}, 50%, 10%)`);
+                bCtx.fillStyle = gradient;
+                bCtx.fillRect(0, 0, bW, bH);
             }
 
-            gradient.addColorStop(0, `hsl(${hue}, 40%, 15%)`);
-            gradient.addColorStop(1, `hsl(${(hue + 80) % 360}, 50%, 10%)`);
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(bgOffscreenCanvas, 0, 0, renderW, renderH);
         }
 
         // Draw Album Cover (Left Side)
@@ -1537,7 +1912,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.save();
             // Shadow
             ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            ctx.shadowBlur = 50;
+            ctx.shadowBlur = isNativeMode ? 50 : 20;
 
             // Rounded corners for album cover
             ctx.beginPath();
@@ -1570,11 +1945,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let textY;
         if (albumImage) {
-            // Align to bottom area, growing upwards if needed (bottom boundary at canvas.height - 50)
-            textY = Math.min(830, canvas.height - 50 - totalMetadataHeight);
+            // Align to bottom area, growing upwards if needed (bottom boundary at renderH - 50)
+            textY = Math.min(830, renderH - 50 - totalMetadataHeight);
         } else {
             // Centered layout if there is no album cover
-            textY = canvas.height / 2 - totalMetadataHeight / 2;
+            textY = renderH / 2 - totalMetadataHeight / 2;
         }
 
         if (songTitle || songArtist) {
@@ -1609,7 +1984,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
-        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.5.0`, 40, 40);
+        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.6.0`, 40, 40);
         ctx.restore();
 
         // Draw Custom Credits (multiple rows flowing down from the artist)
@@ -1683,12 +2058,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const contentWidth = beforeWidth + dotSpace + afterWidth;
                 pillWidth = 20 + contentWidth + 20;
-                pillX = canvas.width - 40 - pillWidth;
+                pillX = renderW - 40 - pillWidth;
             } else {
                 const badgeText = (songKey && hasBpm) ? `Key: ${songKey}  |  ${songBpmVal} BPM` : (songKey ? `Key: ${songKey}` : `${songBpmVal} BPM`);
                 const textWidth = ctx.measureText(badgeText).width;
                 pillWidth = 20 + textWidth + 20;
-                pillX = canvas.width - 40 - pillWidth;
+                pillX = renderW - 40 - pillWidth;
             }
 
             // Draw pill background (glassmorphic dark background)
@@ -1833,16 +2208,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-        if (lyrics.length === 0) return;
+        if (lyrics.length === 0) {
+            ctx.restore();
+            return;
+        }
 
         // Draw Lyrics Setup
         ctx.textAlign = currentLyricAlignment;
         ctx.textBaseline = 'middle';
         
         let lyricX = 850; 
-        let layoutWidth = canvas.width - 850;
+        let layoutWidth = renderW - 850;
         if (!albumImage && currentBgStyle !== 'albumBlur' && currentBgStyle !== 'materialYou') {
-            layoutWidth = canvas.width - 100;
+            layoutWidth = renderW - 100;
             lyricX = 50;
         }
         
@@ -1852,7 +2230,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lyricX = lyricX + layoutWidth - 50;
         }
         
-        const centerY = canvas.height / 2 + currentVerticalOffset;
+        const centerY = renderH / 2 + currentVerticalOffset;
 
         function getWrappedLines(context, lyric, maxWidth, font) {
             const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
@@ -2272,6 +2650,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.restore();
             }
         }
+
+        ctx.restore();
     }
 
     function renderLoop() {
@@ -2329,7 +2709,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startTime = audioContext.currentTime;
         audioSource.start(0, pausedTime);
         isPlaying = true;
-        playBtn.textContent = 'Stop Preview';
+        playBtn.textContent = t('stopPreview') || 'Stop Preview';
 
         renderLoop();
     }
@@ -2345,12 +2725,12 @@ document.addEventListener('DOMContentLoaded', () => {
         isPlaying = false;
         pausedTime = 0;
         smoothedIndex = 0;
-        playBtn.textContent = 'Preview Video';
+        playBtn.textContent = t('previewVideo') || 'Preview Video';
         drawFrame(0);
 
         if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
-            statusMessage.textContent = 'Processing video...';
+            statusMessage.textContent = t('processingVideo') || 'Processing video...';
         }
     }
 
@@ -2377,17 +2757,17 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmBtn.disabled = true;
 
         let timeLeft = 5;
-        confirmBtn.textContent = `Start Export (${timeLeft}s)`;
+        confirmBtn.textContent = `${t('startExport') || 'Start Export'} (${timeLeft}s)`;
 
         if (countdownInterval) clearInterval(countdownInterval);
         countdownInterval = setInterval(() => {
             timeLeft--;
             if (timeLeft > 0) {
-                confirmBtn.textContent = `Start Export (${timeLeft}s)`;
+                confirmBtn.textContent = `${t('startExport') || 'Start Export'} (${timeLeft}s)`;
             } else {
                 clearInterval(countdownInterval);
                 confirmBtn.disabled = false;
-                confirmBtn.textContent = 'Start Export';
+                confirmBtn.textContent = t('startExport') || 'Start Export';
             }
         }, 1000);
     });
@@ -2403,7 +2783,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.remove('active');
         if (countdownInterval) clearInterval(countdownInterval);
 
-        statusMessage.textContent = 'Recording video... Please wait until audio finishes.';
+        statusMessage.textContent = t('recordingVideo') || 'Recording video... Please wait until audio finishes.';
         exportBtn.disabled = true;
         playBtn.disabled = true;
 
@@ -2436,9 +2816,25 @@ document.addEventListener('DOMContentLoaded', () => {
         audioSource.connect(gainNode);
         gainNode.connect(audioContext.destination);
 
-        // Get canvas visual stream with user-selected frame rate
+        // Get canvas visual stream with user-selected frame rate & resolution
         const fpsSelect = document.getElementById('exportFpsSelect');
         const targetFps = fpsSelect ? parseInt(fpsSelect.value) : 30;
+
+        const resSelect = document.getElementById('exportResSelect');
+        const targetRes = resSelect ? resSelect.value : '1080p';
+
+        // Save original canvas resolution and set target resolution for rendering
+        const originalW = canvas.width;
+        const originalH = canvas.height;
+        let targetW = 1920;
+        let targetH = 1080;
+        if (targetRes === '720p') { targetW = 1280; targetH = 720; }
+        else if (targetRes === '1440p') { targetW = 2560; targetH = 1440; }
+        else if (targetRes === '4k') { targetW = 3840; targetH = 2160; }
+
+        canvas.width = targetW;
+        canvas.height = targetH;
+
         const canvasStream = canvas.captureStream(targetFps);
 
         // Combine isolated audio and video tracks
@@ -2464,9 +2860,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Set high bitrate depending on frame rate to ensure pristine visual quality
-            options.videoBitsPerSecond = targetFps === 60 ? 8500000 : 5000000; // 8.5Mbps vs 5Mbps
-            options.audioBitsPerSecond = 256000; // 256kbps audio
+            // Calculate video bitrate based on user selection
+            const qualSelect = document.getElementById('exportQualitySelect');
+            const targetQual = qualSelect ? qualSelect.value : 'high';
+
+            let videoBitrate = 16000000; // Default High (16 Mbps)
+            if (targetQual === 'standard') videoBitrate = 6000000;      // 6 Mbps
+            else if (targetQual === 'high') videoBitrate = 16000000;    // 16 Mbps
+            else if (targetQual === 'ultra') videoBitrate = 30000000;   // 30 Mbps
+            else if (targetQual === 'max') videoBitrate = 50000000;     // 50 Mbps
+
+            // Scale bitrate for 60FPS or higher resolutions
+            if (targetFps === 60) videoBitrate = Math.round(videoBitrate * 1.3);
+            if (targetRes === '1440p') videoBitrate = Math.round(videoBitrate * 1.4);
+            if (targetRes === '4k') videoBitrate = Math.round(videoBitrate * 2.2);
+
+            options.videoBitsPerSecond = videoBitrate;
+            options.audioBitsPerSecond = 320000; // 320kbps audio
 
             mediaRecorder = new MediaRecorder(combinedStream, options);
 
@@ -2478,6 +2888,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             mediaRecorder.onstop = () => {
                 recordCtx.close(); // Close the isolated recording context
+                // Restore original canvas resolution
+                canvas.width = originalW;
+                canvas.height = originalH;
+                drawFrame(0);
                 const mimeType = mediaRecorder.mimeType || 'video/mp4';
                 const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
                 const filename = `lyric_video.${extension}`;
@@ -2501,7 +2915,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 exportBtn.disabled = false;
                 playBtn.disabled = false;
                 progressContainer.style.display = 'none';
-                statusMessage.innerHTML = 'Video generated and downloaded! 🎉 If you like this app, please <a href="https://github.com/Zexerif/lyric-video-maker" target="_blank" rel="noopener" style="color: var(--theme-secondary); text-decoration: underline; font-weight: bold;">star it on GitHub</a>!';
+                statusMessage.innerHTML = t('videoGenerated') || 'Video generated and downloaded! 🎉 If you like this app, please <a href="https://github.com/Zexerif/lyric-video-maker" target="_blank" rel="noopener" style="color: var(--theme-secondary); text-decoration: underline; font-weight: bold;">star it on GitHub</a>!';
             };
 
             // Start recording and playback
@@ -2513,7 +2927,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (e) {
             console.error('MediaRecorder error:', e);
-            statusMessage.textContent = 'Error starting video recording.';
+            statusMessage.textContent = t('errorRecording') || 'Error starting video recording.';
             isRecording = false;
             exportBtn.disabled = false;
             playBtn.disabled = false;
@@ -2662,7 +3076,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 bgUploadCard.classList.remove('has-preview');
                 bgPreview.style.backgroundImage = '';
                 bgPreview.style.display = 'none';
-                bgSubtitle.textContent = 'Click to select or drag image here';
+                bgSubtitle.style.color = 'var(--text-muted)';
+                bgSubtitle.textContent = t('bgSub') || 'Click to select or drag image here';
             }
         }
 
@@ -2681,7 +3096,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 albumUploadCard.classList.remove('has-preview');
                 albumPreview.style.backgroundImage = '';
                 albumPreview.style.display = 'none';
-                albumSubtitle.textContent = 'Click to select or drag image here';
+                albumSubtitle.style.color = 'var(--text-muted)';
+                albumSubtitle.textContent = t('albumSub') || 'Click to select or drag image here';
             }
         }
 
@@ -3168,4 +3584,17 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById(target).classList.add('active');
         });
     });
+
+    if (renderEngineSelect) {
+        renderEngineSelect.addEventListener('change', () => {
+            if (renderEngineWarning) {
+                renderEngineWarning.style.display = renderEngineSelect.value === 'native' ? 'block' : 'none';
+            }
+            drawFrame(0);
+        });
+    }
+
+    // Apply language on load & draw initial canvas preview
+    applyLanguage(currentLanguage);
+    drawFrame(0);
 });
