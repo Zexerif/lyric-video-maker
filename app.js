@@ -4270,67 +4270,100 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function fetchLyricsWithFallback(title, artist) {
-        const cleanTitle = (title || '').trim();
-        const cleanArtist = (artist || '').trim();
+    function sanitizeSongTitle(title) {
+        if (!title) return '';
+        return title
+            .replace(/\([^)]*(?:remaster|deluxe|version|edition|live|bonus|explicit|feat\.|ft\.)[^)]*\)/gi, '')
+            .replace(/\[[^\]]*(?:remaster|deluxe|version|edition|live|bonus|explicit|feat\.|ft\.)[^\]]*\]/gi, '')
+            .replace(/-\s*(?:remastered|remaster|deluxe|single|ep).*$/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
 
-        // 1. Primary: Try LRCLIB API (/api/get)
-        try {
-            const getUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}${cleanArtist ? '&artist_name=' + encodeURIComponent(cleanArtist) : ''}`;
-            console.log(`Trying LRCLIB get: ${getUrl}`);
-            const res = await fetch(getUrl, {
-                headers: { 'User-Agent': 'LyricVideoMaker/1.7 (https://github.com/Zexerif/lyric-video-maker)' }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                if (data && data.syncedLyrics && data.syncedLyrics.trim()) {
-                    return { text: data.syncedLyrics, source: 'LRCLIB' };
+    async function fetchLyricsWithFallback(title, artist) {
+        const rawTitle = (title || '').trim();
+        const rawArtist = (artist || '').trim();
+
+        const cleanTitle = sanitizeSongTitle(rawTitle) || rawTitle;
+        const cleanArtist = sanitizeSongTitle(rawArtist) || rawArtist;
+
+        const titleVariants = [cleanTitle];
+        if (rawTitle !== cleanTitle) titleVariants.push(rawTitle);
+
+        const artistVariants = [cleanArtist];
+        if (rawArtist !== cleanArtist && cleanArtist !== '') artistVariants.push(rawArtist);
+        if (!artistVariants.includes('')) artistVariants.push(''); // Also try title without artist requirement
+
+        // 1. Primary: Try LRCLIB API (/api/get) with variants
+        for (const t of titleVariants) {
+            for (const a of artistVariants) {
+                try {
+                    const getUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(t)}${a ? '&artist_name=' + encodeURIComponent(a) : ''}`;
+                    console.log(`Trying LRCLIB get: ${getUrl}`);
+                    const res = await fetch(getUrl, {
+                        headers: { 'User-Agent': 'LyricVideoMaker/1.7 (https://github.com/Zexerif/lyric-video-maker)' }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.syncedLyrics && data.syncedLyrics.trim()) {
+                            return { text: data.syncedLyrics, source: 'LRCLIB' };
+                        }
+                    }
+                } catch (err) {
+                    console.warn('LRCLIB get fetch error:', err.message);
                 }
             }
-        } catch (err) {
-            console.warn('LRCLIB get fetch error:', err.message);
         }
 
-        // 2. Primary fallback: Try LRCLIB Search API (/api/search)
-        try {
-            const query = `${cleanArtist} ${cleanTitle}`.trim();
-            const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`;
-            console.log(`Trying LRCLIB search: ${searchUrl}`);
-            const res = await fetch(searchUrl, {
-                headers: { 'User-Agent': 'LyricVideoMaker/1.7 (https://github.com/Zexerif/lyric-video-maker)' }
-            });
-            if (res.ok) {
-                const results = await res.json();
-                if (Array.isArray(results)) {
-                    const match = results.find(item => item && item.syncedLyrics && item.syncedLyrics.trim());
-                    if (match) {
-                        return { text: match.syncedLyrics, source: 'LRCLIB' };
+        // 2. Primary fallback: Try LRCLIB Search API (/api/search) with search query
+        for (const t of titleVariants) {
+            for (const a of artistVariants) {
+                try {
+                    const query = `${a} ${t}`.trim();
+                    if (!query) continue;
+                    const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`;
+                    console.log(`Trying LRCLIB search: ${searchUrl}`);
+                    const res = await fetch(searchUrl, {
+                        headers: { 'User-Agent': 'LyricVideoMaker/1.7 (https://github.com/Zexerif/lyric-video-maker)' }
+                    });
+                    if (res.ok) {
+                        const results = await res.json();
+                        if (Array.isArray(results)) {
+                            const match = results.find(item => item && item.syncedLyrics && item.syncedLyrics.trim());
+                            if (match) {
+                                return { text: match.syncedLyrics, source: 'LRCLIB' };
+                            }
+                        }
                     }
+                } catch (err) {
+                    console.warn('LRCLIB search fetch error:', err.message);
                 }
             }
-        } catch (err) {
-            console.warn('LRCLIB search fetch error:', err.message);
         }
 
         // 3. Secondary: Try YouLy+ / LyricsPlus backend instances
-        const queryParams = `title=${encodeURIComponent(cleanTitle)}&artist=${encodeURIComponent(cleanArtist)}`;
-        for (const base of LYRICS_PLUS_INSTANCES) {
-            for (const ver of ["v2", "v1"]) {
-                const url = `${base}/${ver}/lyrics/get?${queryParams}`;
-                try {
-                    console.log(`Trying YouLy+/LyricsPlus instance: ${url}`);
-                    const res = await fetch(url);
-                    if (!res.ok) {
-                        console.warn(`Instance ${base} (${ver}) returned status ${res.status}`);
-                        continue;
+        for (const t of titleVariants) {
+            for (const a of artistVariants) {
+                const queryParams = `title=${encodeURIComponent(t)}&artist=${encodeURIComponent(a)}`;
+                for (const base of LYRICS_PLUS_INSTANCES) {
+                    for (const ver of ["v2", "v1"]) {
+                        const url = `${base}/${ver}/lyrics/get?${queryParams}`;
+                        try {
+                            console.log(`Trying YouLy+/LyricsPlus instance: ${url}`);
+                            const res = await fetch(url);
+                            if (!res.ok) {
+                                console.warn(`Instance ${base} (${ver}) returned status ${res.status}`);
+                                continue;
+                            }
+                            const data = await res.json();
+                            if (data && data.lyrics && data.lyrics.length > 0) {
+                                const lyricsText = convertYoulyToText(data);
+                                return { text: lyricsText, source: data.type === 'Word' ? 'YouLy+ (Word-synced TTML)' : 'YouLy+ (LRC)' };
+                            }
+                        } catch (err) {
+                            console.warn(`Fetch error for ${url}:`, err.message);
+                        }
                     }
-                    const data = await res.json();
-                    if (data && data.lyrics && data.lyrics.length > 0) {
-                        const lyricsText = convertYoulyToText(data);
-                        return { text: lyricsText, source: data.type === 'Word' ? 'YouLy+ (Word-synced TTML)' : 'YouLy+ (LRC)' };
-                    }
-                } catch (err) {
-                    console.warn(`Fetch error for ${url}:`, err.message);
                 }
             }
         }
