@@ -100,7 +100,7 @@ const translations = {
         "karaokeHint": "(Applies word/character-level highlight animations to lyrics)",
         "editorLabel": "Lyric Editor (Live Edit)",
         "editorPlaceholder": "Upload an .lrc/.ttml file or type lyrics here...",
-        "fetchLyricsBtn": "🔍 Fetch Synced Lyrics from YouLy+",
+        "fetchLyricsBtn": "🔍 Fetch Synced Lyrics",
         "exportProj": "📤 Export Project",
         "importProj": "📥 Import Project",
         
