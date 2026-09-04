@@ -4300,9 +4300,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const getUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(t)}${a ? '&artist_name=' + encodeURIComponent(a) : ''}`;
                     console.log(`Trying LRCLIB get: ${getUrl}`);
-                    const res = await fetch(getUrl, {
-                        headers: { 'User-Agent': 'LyricVideoMaker/1.7 (https://github.com/Zexerif/lyric-video-maker)' }
-                    });
+                    const res = await fetch(getUrl);
                     if (res.ok) {
                         const data = await res.json();
                         if (data && data.syncedLyrics && data.syncedLyrics.trim()) {
@@ -4323,9 +4321,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!query) continue;
                     const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`;
                     console.log(`Trying LRCLIB search: ${searchUrl}`);
-                    const res = await fetch(searchUrl, {
-                        headers: { 'User-Agent': 'LyricVideoMaker/1.7 (https://github.com/Zexerif/lyric-video-maker)' }
-                    });
+                    const res = await fetch(searchUrl);
                     if (res.ok) {
                         const results = await res.json();
                         if (Array.isArray(results)) {
