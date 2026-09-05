@@ -2053,7 +2053,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 10;
-        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.7.0`, 40, 40);
+        ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.7.1`, 40, 40);
         ctx.restore();
 
         // Draw Custom Credits (multiple rows flowing down from the artist)
