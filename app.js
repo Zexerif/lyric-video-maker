@@ -1017,7 +1017,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }))
             .sort((a, b) => b.count - a.count);
 
-        if (sorted.length === 0) return null;
+        if (sorted.length === 0) {
+            // No saturated colors found (black and white or grayscale image)
+            // Calculate average luma to generate a monochrome palette
+            let lumaSum = 0;
+            let lumaCount = 0;
+            for (let i = 0; i < imageData.length; i += 4) {
+                if (imageData[i + 3] < 128) continue;
+                lumaSum += (imageData[i] + imageData[i + 1] + imageData[i + 2]) / 3;
+                lumaCount++;
+            }
+            const avg = lumaCount > 0 ? Math.round(lumaSum / lumaCount) : 128;
+            return [
+                { r: Math.min(255, avg + 20), g: Math.min(255, avg + 20), b: Math.min(255, avg + 20) },
+                { r: Math.max(0, avg - 20), g: Math.max(0, avg - 20), b: Math.max(0, avg - 20) },
+                { r: avg, g: avg, b: avg }
+            ];
+        }
 
         const palette = [];
         for (const col of sorted) {
