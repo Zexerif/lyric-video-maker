@@ -133,21 +133,25 @@ const LyricStudio = {
                 for (let i = 0; i < Math.min(paragraphs.length, this.lyricLines.length); i++) {
                     const item = this.lyricLines[i];
                     if (typeof item.time === 'number') {
-                        const oldBegin = parseFloat(paragraphs[i].getAttribute('begin')) || item.time;
+                        const pBeginStr = paragraphs[i].getAttribute('begin');
+                        const oldBegin = typeof parseTime === 'function' ? parseTime(pBeginStr) : (parseFloat(pBeginStr) || item.time);
                         const shift = item.time - oldBegin;
                         paragraphs[i].setAttribute('begin', item.time.toFixed(3));
                         if (paragraphs[i].hasAttribute('end')) {
-                            const oldEnd = parseFloat(paragraphs[i].getAttribute('end')) || (item.time + 3);
+                            const pEndStr = paragraphs[i].getAttribute('end');
+                            const oldEnd = typeof parseTime === 'function' ? parseTime(pEndStr) : (parseFloat(pEndStr) || (item.time + 3));
                             paragraphs[i].setAttribute('end', Math.max(item.time + 0.1, oldEnd + shift).toFixed(3));
                         }
                         const spans = paragraphs[i].getElementsByTagName('span');
                         for (let s = 0; s < spans.length; s++) {
                             if (spans[s].hasAttribute('begin')) {
-                                const sb = parseFloat(spans[s].getAttribute('begin'));
+                                const sbStr = spans[s].getAttribute('begin');
+                                const sb = typeof parseTime === 'function' ? parseTime(sbStr) : parseFloat(sbStr);
                                 spans[s].setAttribute('begin', Math.max(0, sb + shift).toFixed(3));
                             }
                             if (spans[s].hasAttribute('end')) {
-                                const se = parseFloat(spans[s].getAttribute('end'));
+                                const seStr = spans[s].getAttribute('end');
+                                const se = typeof parseTime === 'function' ? parseTime(seStr) : parseFloat(seStr);
                                 spans[s].setAttribute('end', Math.max(0.1, se + shift).toFixed(3));
                             }
                         }

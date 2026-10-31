@@ -31,7 +31,9 @@ function updateLyricsFromEditor() {
         for (let i = 0; i < lyrics.length; i++) {
             const current = lyrics[i];
             const next = lyrics[i + 1];
-            if (next) {
+            if (typeof current.endTime === 'number' && current.endTime > current.time) {
+                current.duration = current.endTime - current.time;
+            } else if (next) {
                 current.duration = next.time - current.time;
             } else if (audioBuffer) {
                 current.duration = Math.max(3.0, audioBuffer.duration - current.time);
@@ -41,7 +43,8 @@ function updateLyricsFromEditor() {
 
             if (animSelect === 'off') {
                 current.words = null;
-            } else if (animSelect === 'on') {
+            } else if (animSelect === 'on' && (!current.words || current.words.length === 0)) {
+                // Synthesize word timings only for plain lyrics that don't already have word-level timestamps
                 const tokens = tokenizeText(current.text);
                 const partDuration = current.duration / tokens.length;
                 current.words = [];

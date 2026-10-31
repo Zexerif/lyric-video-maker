@@ -192,6 +192,22 @@ function cleanSpanText(text) {
     return cleaned;
 }
 
+function parseTime(timeStr) {
+    if (!timeStr) return 0;
+    if (typeof timeStr === 'number') return timeStr;
+    timeStr = String(timeStr).trim();
+    if (timeStr.endsWith('ms')) {
+        return (parseFloat(timeStr.slice(0, -2)) || 0) / 1000;
+    }
+    if (timeStr.endsWith('s')) {
+        timeStr = timeStr.slice(0, -1);
+    }
+    const parts = timeStr.split(':');
+    if (parts.length === 3) return parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + (parseFloat(parts[2]) || 0);
+    if (parts.length === 2) return parseInt(parts[0], 10) * 60 + (parseFloat(parts[1]) || 0);
+    return parseFloat(timeStr) || 0;
+}
+
 function parseTtml(ttmlText) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(ttmlText, "text/xml");
@@ -199,14 +215,6 @@ function parseTtml(ttmlText) {
     const parserErrors = xmlDoc.getElementsByTagName('parsererror');
     const parsed = [];
     const backingVocalsMode = typeof backingVocalsSelect !== 'undefined' && backingVocalsSelect ? backingVocalsSelect.value : 'styled';
-
-    function parseTime(timeStr) {
-        if (!timeStr) return 0;
-        const parts = timeStr.split(':');
-        if (parts.length === 3) return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
-        if (parts.length === 2) return parseInt(parts[0]) * 60 + parseFloat(parts[1]);
-        return parseFloat(timeStr);
-    }
 
     function checkIfBgElement(el) {
         if (!el || typeof el.getAttribute !== 'function') return false;
@@ -237,6 +245,14 @@ function parseTtml(ttmlText) {
             const beginM = attrs.match(/begin="([^"]+)"/i);
             if (!beginM) continue;
             const time = parseTime(beginM[1]);
+            const endM = attrs.match(/end="([^"]+)"/i);
+            const durM = attrs.match(/dur="([^"]+)"/i);
+            let pEndTime = null;
+            if (endM) {
+                pEndTime = parseTime(endM[1]);
+            } else if (durM) {
+                pEndTime = time + parseTime(durM[1]);
+            }
 
             const spans = [];
             const spanRegex = /<span\b([^>]*)>([\s\S]*?)<\/span>/gi;
@@ -246,8 +262,18 @@ function parseTtml(ttmlText) {
                 const sText = cleanSpanText(sMatch[2].replace(/<[^>]+>/g, ''));
                 const sBeginM = sAttrs.match(/begin="([^"]+)"/i);
                 const sEndM = sAttrs.match(/end="([^"]+)"/i);
+                const sDurM = sAttrs.match(/dur="([^"]+)"/i);
                 const wTime = sBeginM ? parseTime(sBeginM[1]) : time;
-                const wEndTime = sEndM ? parseTime(sEndM[1]) : wTime + 1;
+                let wEndTime;
+                if (sEndM) {
+                    wEndTime = parseTime(sEndM[1]);
+                } else if (sDurM) {
+                    wEndTime = wTime + parseTime(sDurM[1]);
+                } else if (pEndTime) {
+                    wEndTime = pEndTime;
+                } else {
+                    wEndTime = wTime + 1;
+                }
                 if (sText) {
                     spans.push({ text: sText, time: wTime, endTime: wEndTime, isBacking: false });
                 }
@@ -257,6 +283,7 @@ function parseTtml(ttmlText) {
             if (fullText) {
                 parsed.push({
                     time,
+                    endTime: pEndTime || (spans.length > 0 ? spans[spans.length - 1].endTime : null),
                     text: fullText,
                     words: spans.length > 0 ? spans : null,
                     isBacking: false
@@ -301,9 +328,15 @@ function parseTtml(ttmlText) {
 
         const begin = p.getAttribute('begin');
         const end = p.getAttribute('end');
+        const dur = p.getAttribute('dur');
         if (begin) {
             const time = parseTime(begin);
-            const pEndTime = end ? parseTime(end) : null;
+            let pEndTime = null;
+            if (end) {
+                pEndTime = parseTime(end);
+            } else if (dur) {
+                pEndTime = time + parseTime(dur);
+            }
 
             const spans = p.getElementsByTagName('span');
             const words = [];
@@ -318,8 +351,18 @@ function parseTtml(ttmlText) {
                         if (node.tagName.toLowerCase() === 'span' && !hasChildElements) {
                             const spanBegin = node.getAttribute('begin');
                             const spanEnd = node.getAttribute('end');
+                            const spanDur = node.getAttribute('dur');
                             const wTime = spanBegin ? parseTime(spanBegin) : time;
-                            const wEndTime = spanEnd ? parseTime(spanEnd) : wTime + 1;
+                            let wEndTime;
+                            if (spanEnd) {
+                                wEndTime = parseTime(spanEnd);
+                            } else if (spanDur) {
+                                wEndTime = wTime + parseTime(spanDur);
+                            } else if (pEndTime) {
+                                wEndTime = pEndTime;
+                            } else {
+                                wEndTime = wTime + 1;
+                            }
                             const isBacking = checkIfBgElement(node) || checkIfBgElement(node.parentElement) || isLineBacking;
 
                             const wText = cleanSpanText(node.textContent);
