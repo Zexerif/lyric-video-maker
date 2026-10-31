@@ -27,7 +27,7 @@ function renderBpmList() {
 
         bpmInput.addEventListener('input', (e) => {
             marker.bpm = parseFloat(e.target.value) || 0;
-            drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+            drawFrame(getPlayheadTime());
             saveProgressToLocalStorage();
         });
 
@@ -43,7 +43,7 @@ function renderBpmList() {
             removeBtn.addEventListener('click', () => {
                 bpmMarkers.splice(index, 1);
                 renderBpmList();
-                drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+                drawFrame(getPlayheadTime());
                 saveProgressToLocalStorage();
             });
         }
@@ -57,26 +57,47 @@ function renderBpmList() {
 
 if (addBpmBtn) {
     addBpmBtn.addEventListener('click', () => {
-        const ct = isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : pausedTime;
+        const flash = (msg) => { if (typeof statusMessage !== 'undefined' && statusMessage) statusMessage.textContent = msg; };
+        if (!audioBuffer) {
+            flash('Load an audio file and move the playhead first.');
+            return;
+        }
+        // Make sure edits typed into the existing rows are not lost
+        syncBpmFromDom();
+
+        const ct = getPlayheadTime();
+        if (ct < 0.1) {
+            flash('Move the playhead (click the waveform) to where the tempo changes, then press + At Playhead.');
+            return;
+        }
         const exists = bpmMarkers.find(m => Math.abs(m.time - ct) < 0.1);
-        if (!exists) {
-            const { bpm } = getBeatInfo(ct, bpmMarkers);
-            bpmMarkers.push({ time: ct, bpm: bpm > 0 ? bpm : 120 });
-            bpmMarkers.sort((a, b) => a.time - b.time);
-            renderBpmList();
-            saveProgressToLocalStorage();
-            // Briefly flash the new row to draw attention
-            const rows = bpmList.querySelectorAll('.bpm-row');
-            const newIdx = bpmMarkers.findIndex(m => Math.abs(m.time - ct) < 0.1);
-            const newRow = rows[newIdx];
-            if (newRow) {
-                newRow.style.background = 'rgba(99,102,241,0.18)';
-                newRow.style.borderColor = 'rgba(99,102,241,0.4)';
-                setTimeout(() => {
-                    newRow.style.background = 'rgba(255,255,255,0.04)';
-                    newRow.style.borderColor = 'rgba(255,255,255,0.06)';
-                }, 600);
-            }
+        if (exists) {
+            flash('A BPM marker already exists at this position.');
+            return;
+        }
+
+        const { bpm } = getBeatInfo(ct, bpmMarkers);
+        const newMarker = { time: ct, bpm: bpm > 0 ? bpm : 120 };
+        bpmMarkers.push(newMarker);
+        bpmMarkers.sort((a, b) => a.time - b.time);
+        renderBpmList();
+        saveProgressToLocalStorage();
+        flash(`BPM marker added at ${formatDuration(ct)}.`);
+        drawFrame(ct);
+
+        // Briefly flash the new row to draw attention and focus its BPM field
+        const rows = bpmList.querySelectorAll('.bpm-row');
+        const newRow = rows[bpmMarkers.indexOf(newMarker)];
+        if (newRow) {
+            newRow.scrollIntoView({ block: 'nearest' });
+            newRow.style.background = 'rgba(99,102,241,0.18)';
+            newRow.style.borderColor = 'rgba(99,102,241,0.4)';
+            const input = newRow.querySelector('.bpm-input');
+            if (input) input.select();
+            setTimeout(() => {
+                newRow.style.background = 'rgba(255,255,255,0.04)';
+                newRow.style.borderColor = 'rgba(255,255,255,0.06)';
+            }, 600);
         }
     });
 }

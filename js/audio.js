@@ -39,6 +39,37 @@ function generateWaveform() {
     }
 }
 
+// Current playhead position in seconds (works while playing, scrubbing or paused)
+function getPlayheadTime() {
+    if ((isPlaying || isRecording) && audioContext) {
+        return Math.max(0, audioContext.currentTime - startTime + pausedTime);
+    }
+    return Math.max(0, pausedTime || 0);
+}
+
+// Move the waveform playhead and keep its time label inside the waveform bounds
+function updateScrubberUI(progressFraction, time) {
+    const p = Math.max(0, Math.min(1, progressFraction));
+    scrubberHead.style.left = `${p * 100}%`;
+    if (!scrubberTime) return;
+    scrubberTime.textContent = formatTime(time);
+    if (p < 0.08) {
+        // Near the left edge: label starts at the playhead and extends right
+        scrubberTime.style.left = '-1px';
+        scrubberTime.style.right = 'auto';
+        scrubberTime.style.transform = 'none';
+    } else if (p > 0.92) {
+        // Near the right edge: label ends at the playhead and extends left
+        scrubberTime.style.left = 'auto';
+        scrubberTime.style.right = '-1px';
+        scrubberTime.style.transform = 'none';
+    } else {
+        scrubberTime.style.left = '50%';
+        scrubberTime.style.right = 'auto';
+        scrubberTime.style.transform = 'translateX(-50%)';
+    }
+}
+
 function syncPreviewToTime(time) {
     pausedTime = time;
     if (!isPlaying && lyrics && lyrics.length > 0) {
@@ -97,14 +128,7 @@ waveformContainer.addEventListener('mousedown', (e) => {
         const clickX = Math.max(0, Math.min(clientX - rect.left, rect.width));
         const progress = clickX / rect.width;
         const time = progress * audioBuffer.duration;
-        scrubberHead.style.left = `${progress * 100}%`;
-        if (scrubberTime) {
-            scrubberTime.textContent = formatTime(time);
-            // Flip label to left side when near the right edge
-            scrubberTime.style.left = progress > 0.85 ? 'auto' : '50%';
-            scrubberTime.style.right = progress > 0.85 ? '4px' : 'auto';
-            scrubberTime.style.transform = progress > 0.85 ? 'none' : 'translateX(-50%)';
-        }
+        updateScrubberUI(progress, time);
         return time;
     };
 
@@ -240,14 +264,7 @@ function renderLoop() {
     // Update waveform scrubber
     if (audioBuffer && !isRestoring) {
         const progress = (currentTime / audioBuffer.duration) * 100;
-        const clampedProgress = Math.min(100, progress);
-        scrubberHead.style.left = `${clampedProgress}%`;
-        if (scrubberTime) {
-            scrubberTime.textContent = formatTime(currentTime);
-            scrubberTime.style.left = clampedProgress > 85 ? 'auto' : '50%';
-            scrubberTime.style.right = clampedProgress > 85 ? '4px' : 'auto';
-            scrubberTime.style.transform = clampedProgress > 85 ? 'none' : 'translateX(-50%)';
-        }
+        updateScrubberUI(Math.min(100, progress) / 100, currentTime);
     }
 
     if (currentTime >= audioBuffer.duration) {
@@ -305,6 +322,7 @@ function stopPlayback() {
     pausedTime = 0;
     smoothedIndex = 0;
     playBtn.textContent = t('previewVideo') || 'Preview Video';
+    updateScrubberUI(0, 0);
     drawFrame(0);
 
     if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
