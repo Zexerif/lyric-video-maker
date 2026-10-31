@@ -4,6 +4,23 @@ All notable changes to **Lyric Video Maker** are documented in this file.
 
 ---
 
+## [2.0.1] - 2026-10-31
+
+### 🚀 Highlights & Features
+- **Advanced SubStation Alpha (.ass / .ssa) Support**:
+  - Full support for importing, playing, and syncing `.ass` and `.ssa` subtitle and lyric files.
+  - Word-level and syllable-level karaoke timing extraction supporting `\k`, `\K`, `\kf`, and `\ko` tags.
+  - Automatic dual-language separation on `\N` linebreaks.
+  - Comprehensive Lyric Studio support for `.ass` files, enabling waveform scrubbing and saving timestamp shifts directly to the original subtitle format.
+- **UI & Performance Fixes**:
+  - Eliminated GPU compositor tile invalidation gradient flicker under frosted glass panels.
+  - Resolved 2x2 media rack grid overflow when decoding long audio files.
+  - Clamped waveform playhead time label position to avoid clipping at the start and end of tracks.
+  - Improved BPM timeline "+ At Playhead" with active playhead detection, duplicate protection, and user feedback messages.
+  - Cleaned up curated style presets to focus on Apple Music, Spotify Canvas, and Minimalist Modern.
+
+---
+
 ## [2.0.0] - 2026-10-31
 
 ### 🚀 Highlights & Major Features

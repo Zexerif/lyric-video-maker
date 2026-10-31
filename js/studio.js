@@ -68,6 +68,7 @@ const LyricStudio = {
         const trimmed = text.trim();
         if (trimmed.startsWith('<tt') || trimmed.startsWith('<?xml') || trimmed.includes('http://www.w3.org/ns/ttml')) {
             this.isTtml = true;
+            this.isAss = false;
             this.rawXml = text;
             const parsed = typeof parseTtml === 'function' ? parseTtml(text) : [];
             this.lyricLines = parsed.filter(l => l.text !== '• • •').map(l => ({
@@ -81,8 +82,25 @@ const LyricStudio = {
             if (this.lyricLines.length === 0) {
                 this.lyricLines = [{ time: 0, text: 'First lyric line', subText: '', isBacking: false }];
             }
+        } else if (typeof isAssSubtitle === 'function' && isAssSubtitle(trimmed)) {
+            this.isTtml = false;
+            this.isAss = true;
+            this.rawAss = text;
+            const parsed = typeof parseAss === 'function' ? parseAss(text) : [];
+            this.lyricLines = parsed.filter(l => l.text !== '• • •').map(l => ({
+                time: l.time,
+                endTime: l.endTime || (l.time + 3),
+                text: l.text,
+                subText: l.subText || '',
+                isBacking: l.isBacking || false,
+                words: l.words || null
+            }));
+            if (this.lyricLines.length === 0) {
+                this.lyricLines = [{ time: 0, text: 'First lyric line', subText: '', isBacking: false }];
+            }
         } else {
             this.isTtml = false;
+            this.isAss = false;
             const lines = text.split('\n');
             const parsed = [];
             const timeReg = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
@@ -163,6 +181,72 @@ const LyricStudio = {
                 }
             } catch (err) {
                 console.warn('TTML serialization fallback to LRC:', err);
+                this.outputLrcFallback();
+            }
+        } else if (this.isAss && this.rawAss) {
+            try {
+                const lines = this.rawAss.split(/\r?\n/);
+                let eventIdx = 0;
+                let inEvents = false;
+                let startIndex = 1;
+                let endIndex = 2;
+                let formatCols = ['layer', 'start', 'end', 'style', 'name', 'marginl', 'marginr', 'marginv', 'effect', 'text'];
+
+                function formatAssTime(seconds) {
+                    if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) seconds = 0;
+                    const h = Math.floor(seconds / 3600);
+                    const m = Math.floor((seconds % 3600) / 60);
+                    const s = Math.floor(seconds % 60);
+                    const cs = Math.floor(Math.round((seconds % 1) * 100));
+                    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
+                }
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line.startsWith('[')) {
+                        inEvents = /^\[Events\]/i.test(line);
+                        continue;
+                    }
+                    if (inEvents && /^Format\s*:/i.test(line)) {
+                        const fStr = line.replace(/^Format\s*:\s*/i, '');
+                        formatCols = fStr.split(',').map(c => c.trim().toLowerCase());
+                        startIndex = formatCols.indexOf('start');
+                        endIndex = formatCols.indexOf('end');
+                        if (startIndex === -1) startIndex = 1;
+                        if (endIndex === -1) endIndex = 2;
+                        continue;
+                    }
+                    if (/^Dialogue\s*:/i.test(line) && eventIdx < this.lyricLines.length) {
+                        const item = this.lyricLines[eventIdx];
+                        if (typeof item.time === 'number') {
+                            const colonIdx = lines[i].indexOf(':');
+                            const prefix = lines[i].slice(0, colonIdx + 1);
+                            const payload = lines[i].slice(colonIdx + 1);
+                            const parts = [];
+                            let lastIdx = 0;
+                            const numCols = Math.max(formatCols.length, Math.max(startIndex, endIndex) + 1);
+                            for (let c = 0; c < numCols - 1; c++) {
+                                const commaIdx = payload.indexOf(',', lastIdx);
+                                if (commaIdx === -1) break;
+                                parts.push(payload.slice(lastIdx, commaIdx));
+                                lastIdx = commaIdx + 1;
+                            }
+                            parts.push(payload.slice(lastIdx));
+
+                            if (parts.length > Math.max(startIndex, endIndex)) {
+                                parts[startIndex] = (parts[startIndex].startsWith(' ') ? ' ' : '') + formatAssTime(item.time);
+                                parts[endIndex] = (parts[endIndex].startsWith(' ') ? ' ' : '') + formatAssTime(item.endTime || (item.time + 3));
+                                lines[i] = prefix + parts.join(',');
+                            }
+                        }
+                        eventIdx++;
+                    }
+                }
+                if (typeof lrcEditor !== 'undefined' && lrcEditor) {
+                    lrcEditor.value = lines.join('\n');
+                }
+            } catch (err) {
+                console.warn('ASS serialization fallback to LRC:', err);
                 this.outputLrcFallback();
             }
         } else {

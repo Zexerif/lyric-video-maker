@@ -1,6 +1,6 @@
 {
   "name": "lyric-video-maker",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Create lyric videos from your audio and lyrics files directly in your browser.",
   "scripts": {
     "test": "node test_suite.js"

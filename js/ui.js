@@ -354,7 +354,7 @@ function handleDroppedFile(file) {
     const isProject = fileName.endsWith('.lvproj') || (fileName.endsWith('.json') && !fileName.includes('package'));
     const isAudio = file.type.startsWith('audio/') ||
         ['.mp3', '.wav', '.flac', '.ogg', '.m4a', '.aac'].some(ext => fileName.endsWith(ext));
-    const isLrc = fileName.endsWith('.lrc') || fileName.endsWith('.ttml') || fileName.endsWith('.xml') || file.type === 'text/plain' || file.type === 'application/xml' || file.type === 'text/xml';
+    const isLrc = fileName.endsWith('.lrc') || fileName.endsWith('.ttml') || fileName.endsWith('.ass') || fileName.endsWith('.ssa') || fileName.endsWith('.xml') || file.type === 'text/plain' || file.type === 'application/xml' || file.type === 'text/xml';
     const isImage = file.type.startsWith('image/') ||
         ['.jpg', '.jpeg', '.png', '.webp', '.gif'].some(ext => fileName.endsWith(ext));
 

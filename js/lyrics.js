@@ -17,6 +17,8 @@ function updateLyricsFromEditor() {
     const text = lrcEditor.value.trim();
     if (text.startsWith('<tt') || text.startsWith('<?xml') || text.includes('http://www.w3.org/ns/ttml')) {
         lyrics = parseTtml(text);
+    } else if (typeof isAssSubtitle === 'function' && isAssSubtitle(text)) {
+        lyrics = parseAss(text);
     } else {
         lyrics = parseLrc(text);
     }

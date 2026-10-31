@@ -1,10 +1,25 @@
-# 🎵 Lyric Video Maker (v2.0.0)
+# 🎵 Lyric Video Maker (v2.0.1)
 
 > Create gorgeous synced lyric videos from your audio and lyrics files directly in your browser.
 
 > 🌐 **Live Web App:** [https://zexerif.github.io/lyric-video-maker/](https://zexerif.github.io/lyric-video-maker/)
 
-**Lyric Video Maker** is a browser-based suite to generate lyric videos from synchronized lyrics (`.lrc` or word-by-word `.ttml` files) and audio tracks (`.mp3`, `.wav`, `.flac`, `.m4a`). It runs 100% locally on the client side, letting you customize typography, animations, background visuals, and export high-definition WebM/MP4 videos securely in your browser.
+**Lyric Video Maker** is a browser-based suite to generate lyric videos from synchronized lyrics (`.lrc`, word-by-word `.ttml`, or `.ass` files) and audio tracks (`.mp3`, `.wav`, `.flac`, `.m4a`). It runs 100% locally on the client side, letting you customize typography, animations, background visuals, and export high-definition WebM/MP4 videos securely in your browser.
+
+---
+
+## 🎉 What's New in v2.0.1
+
+- 📄 **Advanced SubStation Alpha (.ass / .ssa) Support**:
+  - Full support for `.ass` and `.ssa` subtitle files.
+  - Word/syllable-level karaoke tag support (`\k`, `\K`, `\kf`, `\ko`) with precise centisecond timing.
+  - Automatic parsing of dual-language lines delimited by `\N` and formatting tag cleanup.
+  - Full load, waveform sync, and timestamp editing support inside Lyric Studio.
+- 🛠️ **Stability & Polish**:
+  - Fixed background gradient tile invalidation flickering under glass panels.
+  - Fixed media rack 2x2 grid overflow during audio decoding.
+  - Clamped playhead time badge positioning to eliminate edge clipping on waveform scrubber.
+  - Improved BPM timeline "+ At Playhead" validation, feedback messages, and live preview sync.
 
 ---
 

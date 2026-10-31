@@ -11,14 +11,14 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&family=Lexend:wght@400;600;800&family=Bebas+Neue&family=Montserrat:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@700&family=Permanent+Marker&family=Pacifico&family=Comic+Neue:wght@400;700&family=Noto+Sans+JP:wght@400;700;900&family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/index.css">
-    <link rel="stylesheet" href="styles.css?v=2.0.0">
+    <link rel="stylesheet" href="styles.css?v=2.0.1">
 </head>
 
 <body>
     <div id="dropOverlay" class="drop-overlay">
         <div class="drop-message">
             <h2>Drop files here</h2>
-            <p>Audio (.mp3/.wav), Lyrics (.lrc), or Background Image</p>
+            <p>Audio (.mp3/.wav), Lyrics (.lrc/.ttml/.ass), or Background Image</p>
         </div>
     </div>
 
@@ -45,7 +45,7 @@
                     <span class="badge-star">★</span>
                 </a>
             </div>
-            <h1>Lyric Video Maker <button type="button" id="whatsNewBtn" class="version-badge" title="What's New in v2.0.0">v2.0.0</button></h1>
+            <h1>Lyric Video Maker <button type="button" id="whatsNewBtn" class="version-badge" title="What's New in v2.0.1">v2.0.1</button></h1>
             <p>Create simple lyric videos from your audio and lyrics files.</p>
         </header>
 
@@ -78,7 +78,7 @@
                         </div>
 
                         <div class="input-group">
-                            <label style="font-weight: 600; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.2rem;">2. Lyrics (.lrc/.ttml)</label>
+                            <label style="font-weight: 600; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.2rem;">2. Lyrics (.lrc/.ttml/.ass)</label>
                             <label for="lrcInput" class="upload-card compact-card" id="lrcUploadCard">
                                 <div class="upload-icon">📝</div>
                                 <div class="upload-text">
@@ -86,7 +86,7 @@
                                     <span class="upload-subtitle" id="lrcSubtitle">Click to select lyrics</span>
                                 </div>
                             </label>
-                            <input type="file" id="lrcInput" accept=".lrc,.ttml,.xml,text/plain,application/xml,text/xml" style="display: none;">
+                            <input type="file" id="lrcInput" accept=".lrc,.ttml,.ass,.ssa,.xml,text/plain,application/xml,text/xml" style="display: none;">
                         </div>
 
                         <div class="input-group">
@@ -430,7 +430,7 @@
                     <!-- Lyric Editor Textarea -->
                     <div class="input-group" style="height: 100%; margin-top: 0.25rem;">
                         <label for="lrcEditor">Lyric Editor (Live Edit)</label>
-                        <textarea id="lrcEditor" placeholder="Upload an .lrc/.ttml file or type lyrics here..."
+                        <textarea id="lrcEditor" placeholder="Upload an .lrc/.ttml/.ass file or type lyrics here..."
                             style="min-height: 220px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem; line-height: 1.5;"></textarea>
                     </div>
 
@@ -636,7 +636,7 @@
                 <p class="github-link" style="margin: 0;"><a href="https://github.com/Zexerif/lyric-video-maker" target="_blank"
                         rel="noopener">View on GitHub</a></p>
             </div>
-            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v2.0.0
+            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v2.0.1
             </p>
         </footer>
     </div>
@@ -706,14 +706,18 @@
 
     <!-- Keyboard Shortcuts Cheat-Sheet Modal -->
     
-    <!-- What's New in v2.0.0 Modal -->
+    <!-- What's New in v2.0.1 Modal -->
     <div id="whatsNewModal" class="modal-overlay">
         <div class="modal-content glass-panel" style="max-width: 640px; max-height: 85vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
-                <h2 style="margin: 0; font-size: 1.4rem;">🎉 What's New in v2.0.0</h2>
+                <h2 style="margin: 0; font-size: 1.4rem;">🎉 What's New in v2.0.1</h2>
                 <button type="button" id="closeWhatsNewBtn" class="icon-btn">✕</button>
             </div>
             <div class="modal-body" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.85rem;">
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.85rem 1rem;">
+                    <div style="font-weight: 700; color: #38bdf8; font-size: 0.95rem; margin-bottom: 0.25rem;">📄 .ass Subtitle & Karaoke Support</div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;">Native support for Advanced SubStation Alpha (.ass/.ssa) files including word/syllable karaoke tags (\k, \K, \kf, \ko), dual-language lines (\N), and full editing in Lyric Studio.</div>
+                </div>
                 <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.85rem 1rem;">
                     <div style="font-weight: 700; color: #38bdf8; font-size: 0.95rem; margin-bottom: 0.25rem;">✍️ Interactive Lyric Studio & Tap-to-Sync</div>
                     <div style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;">Fullscreen interactive timeline editor with waveform scrubbing, timing nudging (+/- 50ms, +/- 200ms), and real-time spacebar Tap-to-Sync.</div>
@@ -961,7 +965,7 @@
     <script src="js/diagnostics.js?v=1.8.0"></script>
     <script src="js/search.js?v=1.8.0"></script>
     <script src="js/ui.js?v=1.8.0"></script>
-    <script src="js/main.js?v=2.0.0"></script>
+    <script src="js/main.js?v=2.0.1"></script>
 </body>
 
 </html>

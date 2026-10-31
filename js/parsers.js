@@ -454,3 +454,189 @@ function parseTtml(ttmlText) {
     }
     return mergeOverlappingBackingVocals(merged);
 }
+
+
+function isAssSubtitle(text) {
+    if (!text || typeof text !== "string") return false;
+    const trimmed = text.trim();
+    return /^\s*\[Script Info\]/i.test(trimmed) ||
+           /^\s*\[V4\+? Styles\]/i.test(trimmed) ||
+           /^\s*\[Events\]/i.test(trimmed) ||
+           /(?:^|\n)\s*Dialogue\s*:\s*[^,]+,/i.test(trimmed);
+}
+
+function parseAss(assText) {
+    if (!assText) return [];
+    const lines = assText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    const rawParsed = [];
+    const backingVocalsMode = typeof backingVocalsSelect !== "undefined" && backingVocalsSelect ? backingVocalsSelect.value : "styled";
+
+    let inEvents = false;
+    let formatColumns = ["layer", "start", "end", "style", "name", "marginl", "marginr", "marginv", "effect", "text"];
+    let startIndex = 1;
+    let endIndex = 2;
+    let styleIndex = 3;
+    let effectIndex = 8;
+    let textIndex = 9;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line || line.startsWith(";")) continue;
+
+        if (line.startsWith("[")) {
+            inEvents = /^\[Events\]/i.test(line);
+            continue;
+        }
+
+        if (inEvents && /^Format\s*:/i.test(line)) {
+            const formatStr = line.replace(/^Format\s*:\s*/i, "");
+            formatColumns = formatStr.split(",").map(c => c.trim().toLowerCase());
+            startIndex = formatColumns.indexOf("start");
+            endIndex = formatColumns.indexOf("end");
+            styleIndex = formatColumns.indexOf("style");
+            effectIndex = formatColumns.indexOf("effect");
+            textIndex = formatColumns.indexOf("text");
+
+            if (startIndex === -1) startIndex = 1;
+            if (endIndex === -1) endIndex = 2;
+            if (textIndex === -1) textIndex = formatColumns.length - 1;
+            continue;
+        }
+
+        if (/^Dialogue\s*:/i.test(line)) {
+            const colonIdx = line.indexOf(":");
+            const payload = line.slice(colonIdx + 1).trim();
+
+            const numCols = Math.max(formatColumns.length, textIndex + 1);
+            const parts = [];
+            let lastIdx = 0;
+            for (let c = 0; c < numCols - 1; c++) {
+                const commaIdx = payload.indexOf(",", lastIdx);
+                if (commaIdx === -1) break;
+                parts.push(payload.slice(lastIdx, commaIdx).trim());
+                lastIdx = commaIdx + 1;
+            }
+            parts.push(payload.slice(lastIdx));
+
+            if (parts.length <= Math.max(startIndex, endIndex)) continue;
+
+            const startStr = parts[startIndex];
+            const endStr = parts[endIndex];
+            const time = parseTime(startStr);
+            let endTime = parseTime(endStr);
+            if (endTime <= time) {
+                endTime = time + 3.0;
+            }
+
+            const styleStr = styleIndex !== -1 && parts[styleIndex] ? parts[styleIndex] : "";
+            const effectStr = effectIndex !== -1 && parts[effectIndex] ? parts[effectIndex] : "";
+            const rawText = (textIndex !== -1 && parts[textIndex] !== undefined) ? parts[textIndex] : parts[parts.length - 1];
+
+            const isStyleBacking = /bg|background|backing|vocal|chorus/i.test(styleStr) || /bg|background|backing|vocal|chorus/i.test(effectStr);
+            const trimmedRaw = rawText.replace(/\{[^}]*\}/g, "").trim();
+            const isParenthesesBacking = trimmedRaw.startsWith("(") && trimmedRaw.endsWith(")");
+            const isBacking = isStyleBacking || isParenthesesBacking;
+
+            if (backingVocalsMode === "hide" && isBacking) continue;
+
+            const hasKaraoke = /\\(?:k|K|kf|ko)\d+/i.test(rawText);
+            let words = null;
+            let mainText = "";
+            let subText = null;
+
+            if (hasKaraoke) {
+                words = [];
+                let curTime = time;
+                const tagRegex = /\{([^}]*)\}|([^{]+)/g;
+                let m;
+                let pendingDuration = 0;
+
+                while ((m = tagRegex.exec(rawText)) !== null) {
+                    if (m[1] !== undefined) {
+                        const tagContent = m[1];
+                        const kMatches = tagContent.match(/\\(?:k|K|kf|ko)(\d+)/gi);
+                        if (kMatches) {
+                            for (const km of kMatches) {
+                                const num = parseInt(km.replace(/\\(?:k|K|kf|ko)/i, ""), 10);
+                                if (!isNaN(num)) {
+                                    pendingDuration += num / 100;
+                                }
+                            }
+                        }
+                    } else if (m[2] !== undefined) {
+                        let chunk = m[2].replace(/\\N/gi, " ").replace(/\\h/gi, " ");
+                        chunk = cleanSpanText(chunk);
+                        if (chunk) {
+                            const wDuration = pendingDuration > 0 ? pendingDuration : Math.max(0.05, (endTime - curTime) / 4);
+                            const wEndTime = curTime + wDuration;
+                            words.push({
+                                text: chunk,
+                                time: curTime,
+                                endTime: wEndTime,
+                                isBacking: isBacking
+                            });
+                            curTime = wEndTime;
+                            pendingDuration = 0;
+                        }
+                    }
+                }
+                if (words.length > 0) {
+                    mainText = words.map(w => w.text).join("").trim();
+                    if (endTime < curTime) endTime = curTime;
+                } else {
+                    words = null;
+                }
+            }
+
+            if (!words) {
+                let clean = rawText.replace(/\{[^}]*\}/g, "").replace(/\\h/gi, " ").trim();
+                if (clean.includes("\\N") || clean.includes("\\n")) {
+                    const splitParts = clean.split(/\\N|\\n/);
+                    mainText = cleanSpanText(splitParts[0]);
+                    subText = cleanSpanText(splitParts.slice(1).join(" / "));
+                } else {
+                    mainText = cleanSpanText(clean);
+                }
+
+                if (!subText && /\s*(?:\/{2,3}|\|)\s*/.test(mainText)) {
+                    const splitParts = mainText.split(/\s*(?:\/{2,3}|\|)\s*/);
+                    mainText = splitParts[0].trim();
+                    subText = splitParts.slice(1).join(" / ").trim();
+                }
+            }
+
+            mainText = normalizeHomoglyphs(mainText);
+            if (subText) subText = normalizeHomoglyphs(subText);
+
+            if (mainText) {
+                rawParsed.push({
+                    time,
+                    endTime,
+                    text: mainText,
+                    subText,
+                    words,
+                    isBacking
+                });
+            }
+        }
+    }
+
+    rawParsed.sort((a, b) => a.time - b.time);
+
+    const merged = [];
+    for (let i = 0; i < rawParsed.length; i++) {
+        const curr = rawParsed[i];
+        if (i < rawParsed.length - 1) {
+            const next = rawParsed[i + 1];
+            if (Math.abs(curr.time - next.time) < 0.15 && !curr.subText && !next.subText && !curr.isBacking && !next.isBacking) {
+                curr.subText = next.text;
+                merged.push(curr);
+                i++;
+                continue;
+            }
+        }
+        merged.push(curr);
+    }
+
+    return mergeOverlappingBackingVocals(merged);
+}
