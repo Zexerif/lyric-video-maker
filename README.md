@@ -21,7 +21,7 @@
   - Auto-detects dual-language pairs separated by `//`, `///`, `|`, or consecutive timestamps.
   - Renders translations or romaji subtitles directly underneath main lyric lines with configurable display options.
 - 🎨 **One-Click Curated Style Presets**:
-  - Instant aesthetic switching: *Clean Modern*, *Retro Synthwave*, *Minimalist Monospace*, *Romantic Rose*, and *Cinematic Glow*.
+  - Instant aesthetic switching: *Apple Music*, *Spotify Canvas*, and *Minimalist Modern*.
 - ↶ **Global Undo & Redo (`Ctrl+Z` / `Ctrl+Y`)**:
   - Dedicated history stack tracking style adjustments, editor changes, and preset selections.
 - ⌨️ **Comprehensive Keyboard Shortcuts**:

@@ -21,7 +21,7 @@ All notable changes to **Lyric Video Maker** are documented in this file.
   - Renders translations or romanized pronunciations directly beneath the main lyric line.
   - Toggle options to display or hide secondary subtitles.
 - **Curated One-Click Style Presets**:
-  - Added 5 curated presets: *Clean Modern*, *Retro Synthwave*, *Minimalist Monospace*, *Romantic Rose*, and *Cinematic Glow*.
+  - Added curated presets: *Apple Music*, *Spotify Canvas*, and *Minimalist Modern*.
   - Instantly configures fonts, colors, glows, animations, and visualizer settings with one click.
 - **Global Undo & Redo System (`Ctrl+Z` / `Ctrl+Y`)**:
   - History state manager capturing style customizations, editor inputs, and presets.

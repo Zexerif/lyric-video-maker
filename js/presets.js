@@ -23,27 +23,6 @@ const StylePresets = {
                 audioReactive: "pulseArtwork"
             }
         },
-        karaoke: {
-            name: "Karaoke Party",
-            icon: "🎤",
-            desc: "Centered bold typography with bouncing neon word highlights",
-            config: {
-                font: "Impact",
-                lyricAlignment: "center",
-                bgStyle: "reactive",
-                dynamicGlow: false,
-                lyricColor: "#ffffff",
-                glowColor: "#ec4899",
-                lyricTransition: "bounce",
-                backingVocals: "normal",
-                fontSize: 68,
-                lineSpacing: 1.2,
-                verticalOffset: 0,
-                bpmVisualizer: "double-ring",
-                animatePlainLyrics: "on",
-                audioReactive: "spectrum"
-            }
-        },
         minimal: {
             name: "Minimalist Modern",
             icon: "✨",
@@ -84,27 +63,6 @@ const StylePresets = {
                 bpmVisualizer: "pill-flash",
                 animatePlainLyrics: "default",
                 audioReactive: "ambientBreathe"
-            }
-        },
-        retro: {
-            name: "Retro Synthwave",
-            icon: "🌆",
-            desc: "Neon script typography, purple aura and sonar visualizer",
-            config: {
-                font: "Pacifico",
-                lyricAlignment: "center",
-                bgStyle: "reactive",
-                dynamicGlow: false,
-                lyricColor: "#fef08a",
-                glowColor: "#a855f7",
-                lyricTransition: "glowBeat",
-                backingVocals: "styled",
-                fontSize: 62,
-                lineSpacing: 1.3,
-                verticalOffset: 0,
-                bpmVisualizer: "ring-expand",
-                animatePlainLyrics: "on",
-                audioReactive: "spectrum"
             }
         }
     },
