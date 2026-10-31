@@ -204,8 +204,8 @@ function applyLanguage(lang) {
     if (stepDescs[3]) stepDescs[3].innerHTML = t('step4Desc') || stepDescs[3].innerHTML;
 
     // Export Modal
-    setText('.modal-content h2', 'modalTitle');
-    setText('.modal-subtitle', 'modalSub');
+    setText('#exportModal .modal-content h2', 'modalTitle');
+    setText('#exportModal .modal-subtitle', 'modalSub');
     const modalTitles = document.querySelectorAll('.modal-card-title');
     const modalDescs = document.querySelectorAll('.modal-card-desc');
     if (modalTitles[0]) modalTitles[0].textContent = t('stayTab') || modalTitles[0].textContent;

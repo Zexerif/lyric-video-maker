@@ -17,7 +17,7 @@ const LyricStudio = {
         if (!modal) return;
 
         // Parse current lyrics from lrcEditor
-        this.loadFromLrc(lrcEditor ? lrcEditor.value : '');
+        this.loadLyrics(lrcEditor ? lrcEditor.value : '');
 
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -52,49 +52,72 @@ const LyricStudio = {
         }
     },
 
-    loadFromLrc(text) {
+        loadFromLrc(text) {
+        return this.loadLyrics(text);
+    },
+
+    loadLyrics(text) {
         if (!text || !text.trim()) {
             this.lyricLines = [
                 { time: 0, text: 'First lyric line', subText: '', isBacking: false }
             ];
+            this.isTtml = false;
             return;
         }
 
-        const lines = text.split('\n');
-        const parsed = [];
-        const timeReg = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
-
-        lines.forEach(rawLine => {
-            const trimmed = rawLine.trim();
-            if (!trimmed) return;
-
-            let lineText = trimmed.replace(timeReg, '').trim();
-            let subText = '';
-            if (/\s*(?:\/{2,3}|\|)\s*/.test(lineText)) {
-                const parts = lineText.split(/\s*(?:\/{2,3}|\|)\s*/);
-                lineText = parts[0].trim();
-                subText = parts.slice(1).join(' / ').trim();
+        const trimmed = text.trim();
+        if (trimmed.startsWith('<tt') || trimmed.startsWith('<?xml') || trimmed.includes('http://www.w3.org/ns/ttml')) {
+            this.isTtml = true;
+            this.rawXml = text;
+            const parsed = typeof parseTtml === 'function' ? parseTtml(text) : [];
+            this.lyricLines = parsed.filter(l => l.text !== '• • •').map(l => ({
+                time: l.time,
+                endTime: l.endTime || (l.time + 3),
+                text: l.text,
+                subText: l.subText || '',
+                isBacking: l.isBacking || false,
+                words: l.words || null
+            }));
+            if (this.lyricLines.length === 0) {
+                this.lyricLines = [{ time: 0, text: 'First lyric line', subText: '', isBacking: false }];
             }
+        } else {
+            this.isTtml = false;
+            const lines = text.split('\n');
+            const parsed = [];
+            const timeReg = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
 
-            const isBacking = lineText.startsWith('(') && lineText.endsWith(')');
+            lines.forEach(rawLine => {
+                const tr = rawLine.trim();
+                if (!tr) return;
 
-            timeReg.lastIndex = 0;
-            const match = timeReg.exec(trimmed);
-            if (match) {
-                const minutes = parseInt(match[1]);
-                const seconds = parseInt(match[2]);
-                const milliseconds = parseInt(match[3]) * (match[3].length === 2 ? 10 : 1);
-                const time = minutes * 60 + seconds + milliseconds / 1000;
-                parsed.push({ time, text: lineText, subText, isBacking });
-            } else {
-                // Untimed line (ready for tap-to-sync)
-                parsed.push({ time: null, text: lineText, subText, isBacking });
-            }
-        });
+                let lineText = tr.replace(timeReg, '').trim();
+                let subText = '';
+                if (/\s*(?:\/{2,3}|\|)\s*/.test(lineText)) {
+                    const parts = lineText.split(/\s*(?:\/{2,3}|\|)\s*/);
+                    lineText = parts[0].trim();
+                    subText = parts.slice(1).join(' / ').trim();
+                }
 
-        this.lyricLines = parsed.length > 0 ? parsed : [
-            { time: 0, text: 'First lyric line', subText: '', isBacking: false }
-        ];
+                const isBacking = lineText.startsWith('(') && lineText.endsWith(')');
+
+                timeReg.lastIndex = 0;
+                const match = timeReg.exec(tr);
+                if (match) {
+                    const minutes = parseInt(match[1]);
+                    const seconds = parseInt(match[2]);
+                    const milliseconds = parseInt(match[3]) * (match[3].length === 2 ? 10 : 1);
+                    const time = minutes * 60 + seconds + milliseconds / 1000;
+                    parsed.push({ time, text: lineText, subText, isBacking });
+                } else {
+                    parsed.push({ time: null, text: lineText, subText, isBacking });
+                }
+            });
+
+            this.lyricLines = parsed.length > 0 ? parsed : [
+                { time: 0, text: 'First lyric line', subText: '', isBacking: false }
+            ];
+        }
     },
 
     saveToLrc() {
@@ -102,6 +125,64 @@ const LyricStudio = {
             HistoryManager.pushState('Lyric Studio Changes');
         }
 
+        if (this.isTtml && this.rawXml) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(this.rawXml, 'text/xml');
+                const paragraphs = xmlDoc.getElementsByTagName('p');
+                for (let i = 0; i < Math.min(paragraphs.length, this.lyricLines.length); i++) {
+                    const item = this.lyricLines[i];
+                    if (typeof item.time === 'number') {
+                        const oldBegin = parseFloat(paragraphs[i].getAttribute('begin')) || item.time;
+                        const shift = item.time - oldBegin;
+                        paragraphs[i].setAttribute('begin', item.time.toFixed(3));
+                        if (paragraphs[i].hasAttribute('end')) {
+                            const oldEnd = parseFloat(paragraphs[i].getAttribute('end')) || (item.time + 3);
+                            paragraphs[i].setAttribute('end', Math.max(item.time + 0.1, oldEnd + shift).toFixed(3));
+                        }
+                        const spans = paragraphs[i].getElementsByTagName('span');
+                        for (let s = 0; s < spans.length; s++) {
+                            if (spans[s].hasAttribute('begin')) {
+                                const sb = parseFloat(spans[s].getAttribute('begin'));
+                                spans[s].setAttribute('begin', Math.max(0, sb + shift).toFixed(3));
+                            }
+                            if (spans[s].hasAttribute('end')) {
+                                const se = parseFloat(spans[s].getAttribute('end'));
+                                spans[s].setAttribute('end', Math.max(0.1, se + shift).toFixed(3));
+                            }
+                        }
+                    }
+                }
+                const serializer = new XMLSerializer();
+                if (typeof lrcEditor !== 'undefined' && lrcEditor) {
+                    lrcEditor.value = serializer.serializeToString(xmlDoc);
+                }
+            } catch (err) {
+                console.warn('TTML serialization fallback to LRC:', err);
+                this.outputLrcFallback();
+            }
+        } else {
+            this.outputLrcFallback();
+        }
+
+        if (typeof updateLyricsFromEditor === 'function') {
+            updateLyricsFromEditor();
+        }
+        if (typeof saveProgressToLocalStorage === 'function') {
+            saveProgressToLocalStorage();
+        }
+        if (typeof drawFrame === 'function') {
+            drawFrame(typeof pausedTime !== 'undefined' ? pausedTime : 0);
+        }
+
+        if (typeof statusMessage !== 'undefined' && statusMessage) {
+            statusMessage.textContent = '✅ Lyric Studio changes applied successfully!';
+            statusMessage.style.color = '#4ade80';
+        }
+        this.close();
+    },
+
+    outputLrcFallback() {
         const outputLines = [];
         this.lyricLines.forEach(item => {
             const time = typeof item.time === 'number' ? item.time : 0;
@@ -120,22 +201,7 @@ const LyricStudio = {
         const newLrc = outputLines.join('\n');
         if (typeof lrcEditor !== 'undefined' && lrcEditor) {
             lrcEditor.value = newLrc;
-            if (typeof updateLyricsFromEditor === 'function') {
-                updateLyricsFromEditor();
-            }
         }
-        if (typeof saveProgressToLocalStorage === 'function') {
-            saveProgressToLocalStorage();
-        }
-        if (typeof drawFrame === 'function') {
-            drawFrame(typeof pausedTime !== 'undefined' ? pausedTime : 0);
-        }
-
-        if (typeof statusMessage !== 'undefined' && statusMessage) {
-            statusMessage.textContent = '✅ Lyric Studio changes applied successfully!';
-            statusMessage.style.color = '#4ade80';
-        }
-        this.close();
     },
 
     toggleTapToSync() {

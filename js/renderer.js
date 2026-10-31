@@ -344,7 +344,7 @@ function drawFrame(currentTime) {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.shadowColor = 'rgba(0,0,0,0.8)';
     ctx.shadowBlur = 10;
-    ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v1.7.1`, 40, 40);
+    ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v2.0.0`, 40, 40);
     ctx.restore();
 
     // Draw Custom Credits (multiple rows flowing down from the artist)
@@ -403,17 +403,17 @@ function drawFrame(currentTime) {
         ctx.font = `600 20px "${currentFont}", sans-serif`;
 
         if (showVis) {
-            beforeText = songKey ? `Key: ${songKey}  |  ` : '';
+            beforeText = songKey ? `Key: ${songKey}` : '';
             afterText = `${songBpmVal} BPM`;
             beforeWidth = beforeText ? ctx.measureText(beforeText).width : 0;
             afterWidth = ctx.measureText(afterText).width;
 
             if (!beforeText) {
-                dotSpace = 44;
-                dotOffset = 12;
+                dotSpace = 36;
+                dotOffset = 14;
             } else {
-                dotSpace = 50;
-                dotOffset = 25;
+                dotSpace = 54;
+                dotOffset = 27;
             }
 
             const contentWidth = beforeWidth + dotSpace + afterWidth;

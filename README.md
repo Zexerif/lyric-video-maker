@@ -32,8 +32,6 @@
   - Search any track on iTunes to auto-fill title, artist, key, BPM, and high-resolution cover art.
 - 📥 **Integrated Synced Lyrics Search**:
   - Query LyricsPlus and LRCLIB directly to retrieve timed LRC/TTML lyrics in one click.
-- 🔬 **Comprehensive Diagnostics & 1-Click Auto-Repair**:
-  - Built-in linter and auto-fixer for timing issues, out-of-order timestamps, and format errors.
 - 📱 **Streamlined UI & Zero-Overflow Layout**:
   - 2x2 media rack, uniform 38px pill button aesthetic, and adaptive layout that fits cleanly across all screen sizes.
 - 🧩 **Modular ES6 Architecture**:

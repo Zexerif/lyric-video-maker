@@ -36,8 +36,8 @@ All notable changes to **Lyric Video Maker** are documented in this file.
   - Direct search querying iTunes for song title, artist, key, BPM, and high-definition album art.
 - **Integrated Synced Lyrics Search**:
   - Direct lookup via LyricsPlus and LRCLIB APIs to automatically retrieve and load timed lyrics.
-- **Built-in Diagnostics & 1-Click Auto-Repair**:
-  - Automated linter checking for timing overlap, out-of-order lines, empty timestamps, and corrupted metadata with 1-click batch repair.
+- **Homoglyph & Typography Normalization**:
+  - Automatic normalization of Cyrillic homoglyphs (such as Cyrillic 'е' / 'а') in imported lyrics, preventing system font mismatches.
 
 ### 🎨 UI & Responsive Layout Fixes
 - **Unified 38px Pill Button Aesthetic**: Header action buttons (undo, redo, shortcuts, "What's New" badge, language select, and GitHub star badge) aligned at a uniform 38px height with matching circular/pill geometry.
@@ -49,3 +49,11 @@ All notable changes to **Lyric Video Maker** are documented in this file.
 - Modularized monolithic codebase into 20 clean, maintainable ES6 modules under `js/`.
 - Verified with automated test suite (`test_suite.js`) covering parsers, history, presets, and studio logic.
 - Automated ID verification (`verify_ids.js`) validating 100% selector consistency between HTML and JavaScript.
+
+
+---
+
+## [1.7.0] - 2026-06-08
+
+### 🚀 Highlights
+- **Built-in Diagnostics & 1-Click Auto-Repair**: Automated linter and one-click repair suite for syntax issues, timestamp sequencing, and overlapping lines.

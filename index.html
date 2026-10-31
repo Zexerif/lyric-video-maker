@@ -30,7 +30,6 @@
                 <button type="button" id="globalUndoBtn" class="action-undo-btn icon-btn" title="Undo (Ctrl+Z)" disabled>↶</button>
                 <button type="button" id="globalRedoBtn" class="action-redo-btn icon-btn" title="Redo (Ctrl+Y)" disabled>↷</button>
                 <button type="button" id="shortcutsBtn" class="icon-btn" title="Keyboard Shortcuts (?)">⌨️</button>
-                <button type="button" id="whatsNewBtn" class="whats-new-badge" title="What's New in v2.0.0">✨ v2.0.0</button>
                 <select id="langSelect" class="lang-select">
                     <option value="en">🇬🇧 EN</option>
                     <option value="ja">🇯🇵 JA</option>
@@ -46,7 +45,7 @@
                     <span class="badge-star">★</span>
                 </a>
             </div>
-            <h1>Lyric Video Maker</h1>
+            <h1>Lyric Video Maker <button type="button" id="whatsNewBtn" class="version-badge" title="What's New in v2.0.0">v2.0.0</button></h1>
             <p>Create simple lyric videos from your audio and lyrics files.</p>
         </header>
 
@@ -128,7 +127,7 @@
                         </div>
                     </div>
 
-                    <div class="input-group" style="margin-top: -0.25rem;">
+                    <div class="input-group" style="margin: 0;">
                         <div style="display: flex; gap: 0.5rem; width: 100%; align-items: center;">
                             <input type="text" id="albumUrl" placeholder="Or paste Album Cover URL..." style="flex: 1; height: 38px; padding: 0 0.75rem; font-size: 0.82rem; margin: 0; border-radius: 10px; box-sizing: border-box;">
                             <button id="loadAlbumUrl" class="btn small" style="width: auto; height: 38px; padding: 0 1.15rem; margin: 0; font-size: 0.82rem; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;">Load</button>
@@ -639,7 +638,7 @@
                 <p class="github-link" style="margin: 0;"><a href="https://github.com/Zexerif/lyric-video-maker" target="_blank"
                         rel="noopener">View on GitHub</a></p>
             </div>
-            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v1.7.1
+            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v2.0.0
             </p>
         </footer>
     </div>

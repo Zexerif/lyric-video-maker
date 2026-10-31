@@ -29,23 +29,18 @@ function mergeOverlappingBackingVocals(parsedList) {
         if (item.isBacking) {
             let canMerge = false;
             if (currentMain && currentMain.text !== '• • •' && currentMain.text.trim()) {
-                const timeDiff = item.time - currentMain.time;
-                // Maximum overlap window: if currentMain has endTime use that + 2.0s, else 12s
-                const maxWindow = currentMain.endTime 
-                    ? Math.max(currentMain.endTime - currentMain.time + 1.5, 3.0)
-                    : 12.0;
-
-                // Check that item occurs before the next non-backing main vocal starts
-                let nextMainTime = Infinity;
-                for (let k = i + 1; k < parsedList.length; k++) {
-                    if (!parsedList[k].isBacking) {
-                        nextMainTime = parsedList[k].time;
-                        break;
+                // Strict Overlap Check: backing vocal must begin strictly WHILE currentMain is active
+                if (typeof currentMain.endTime === 'number') {
+                    // In TTML with explicit end times: item starts before currentMain finishes
+                    if (item.time >= currentMain.time && item.time < currentMain.endTime - 0.2) {
+                        canMerge = true;
                     }
-                }
-
-                if (timeDiff >= 0 && timeDiff <= maxWindow && item.time < nextMainTime) {
-                    canMerge = true;
+                } else {
+                    // In LRC without explicit end times: only merge if within tight 1.5s window
+                    const timeDiff = item.time - currentMain.time;
+                    if (timeDiff >= 0 && timeDiff <= 1.5) {
+                        canMerge = true;
+                    }
                 }
             }
 
@@ -118,7 +113,7 @@ function parseLrc(lrcText) {
         const isBacking = lineLyrics.startsWith('(') && lineLyrics.endsWith(')');
         if (backingVocalsMode === 'hide' && isBacking) return;
 
-        let mainText = lineLyrics;
+        let mainText = normalizeHomoglyphs(lineLyrics);
         let subText = null;
 
         // Check for inline dual-language delimiters: //, ///, |
@@ -161,7 +156,33 @@ function parseLrc(lrcText) {
     return mergeOverlappingBackingVocals(parsed);
 }
 
+
+function normalizeHomoglyphs(text) {
+    if (!text) return '';
+    return text
+        .replace(/\u0435/g, 'e') // Cyrillic small ie
+        .replace(/\u0430/g, 'a') // Cyrillic small a
+        .replace(/\u043E/g, 'o') // Cyrillic small o
+        .replace(/\u0440/g, 'p') // Cyrillic small er
+        .replace(/\u0441/g, 'c') // Cyrillic small es
+        .replace(/\u0443/g, 'y') // Cyrillic small u
+        .replace(/\u0445/g, 'x') // Cyrillic small ha
+        .replace(/\u0456/g, 'i') // Cyrillic small i
+        .replace(/\u0458/g, 'j') // Cyrillic small je
+        .replace(/\u0455/g, 's') // Cyrillic small dze
+        .replace(/\u0415/g, 'E') // Cyrillic capital IE
+        .replace(/\u0410/g, 'A') // Cyrillic capital A
+        .replace(/\u041E/g, 'O') // Cyrillic capital O
+        .replace(/\u0420/g, 'P') // Cyrillic capital ER
+        .replace(/\u0421/g, 'C') // Cyrillic capital ES
+        .replace(/\u0422/g, 'T') // Cyrillic capital TE
+        .replace(/\u041C/g, 'M') // Cyrillic capital EM
+        .replace(/\u0412/g, 'B') // Cyrillic capital VE
+        .replace(/\u041D/g, 'H'); // Cyrillic capital EN
+}
+
 function cleanSpanText(text) {
+    text = normalizeHomoglyphs(text);
     let cleaned = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
     const endsWithSpace = /\s$/.test(text);
     const startsWithSpace = /^\s/.test(text);
@@ -279,8 +300,10 @@ function parseTtml(ttmlText) {
         }
 
         const begin = p.getAttribute('begin');
+        const end = p.getAttribute('end');
         if (begin) {
             const time = parseTime(begin);
+            const pEndTime = end ? parseTime(end) : null;
 
             const spans = p.getElementsByTagName('span');
             const words = [];
@@ -359,6 +382,7 @@ function parseTtml(ttmlText) {
 
                 parsed.push({
                     time,
+                    endTime: pEndTime || (words.length > 0 ? words[words.length - 1].endTime : null),
                     text: mainText,
                     subText,
                     words: words.length > 0 ? words : null,
