@@ -1702,8 +1702,23 @@ footer {
 /* === Streamlined UI Layout Additions === */
 .media-rack-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.65rem;
+    width: 100%;
+    max-width: 100%;
+}
+
+.media-rack-grid > .input-group {
+    min-width: 0;
+}
+
+.media-rack-grid .upload-card {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.media-rack-grid .upload-spinner {
+    flex-shrink: 0;
 }
 
 @media (max-width: 600px) {
