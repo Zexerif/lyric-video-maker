@@ -344,7 +344,7 @@ function drawFrame(currentTime) {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.shadowColor = 'rgba(0,0,0,0.8)';
     ctx.shadowBlur = 10;
-    ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v2.0.1`, 40, 40);
+    ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v2.1.0`, 40, 40);
     ctx.restore();
 
     // Draw Custom Credits (multiple rows flowing down from the artist)
@@ -592,7 +592,14 @@ function drawFrame(currentTime) {
 
     function getWrappedLines(context, lyric, maxWidth, font) {
         const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
-        if (lyric.cachedLines && lyric.cachedFont === font && lyric.cachedMaxWidth === maxWidth && lyric.cachedBackingMode === backingVocalsMode) {
+        const rubySignature = Array.isArray(lyric.words)
+            ? lyric.words.map(w => `${w.text || ''}:${w.ruby || ''}`).join('|')
+            : (lyric.text || '');
+        if (lyric.cachedLines &&
+            lyric.cachedFont === font &&
+            lyric.cachedMaxWidth === maxWidth &&
+            lyric.cachedBackingMode === backingVocalsMode &&
+            lyric.cachedRubySig === rubySignature) {
             return lyric.cachedLines;
         }
 
@@ -603,7 +610,21 @@ function drawFrame(currentTime) {
             const isWordByWord = lyric.words.length > 1;
             for (let i = 0; i < lyric.words.length; i++) {
                 const w = lyric.words[i];
-                const rawText = w.text;
+                const rawText = w.text || '';
+                const wRuby = w.ruby ? String(w.ruby).trim() : '';
+
+                // If a word token has a ruby annotation, keep the base text and its ruby reading together as one atomic item
+                if (wRuby) {
+                    items.push({
+                        text: rawText,
+                        ruby: wRuby,
+                        time: w.time,
+                        endTime: w.endTime,
+                        isBacking: w.isBacking
+                    });
+                    continue;
+                }
+
                 if (isWordByWord) {
                     const startsWithSpace = /^\s/.test(rawText);
                     const endsWithSpace = /\s$/.test(rawText);
@@ -623,6 +644,7 @@ function drawFrame(currentTime) {
                             }
                             items.push({
                                 text: itemText,
+                                ruby: '',
                                 time: w.time + k * partDuration,
                                 endTime: w.time + (k + 1) * partDuration,
                                 isBacking: w.isBacking
@@ -637,6 +659,7 @@ function drawFrame(currentTime) {
                         for (let k = 0; k < parts.length; k++) {
                             items.push({
                                 text: parts[k],
+                                ruby: '',
                                 time: w.time + k * partDuration,
                                 endTime: w.time + (k + 1) * partDuration,
                                 isBacking: w.isBacking
@@ -646,14 +669,29 @@ function drawFrame(currentTime) {
                 }
             }
         } else {
-            const tokens = tokenizeText(lyric.text);
-            for (let i = 0; i < tokens.length; i++) {
-                items.push({
-                    text: tokens[i],
-                    time: lyric.time,
-                    endTime: lyric.time + 1,
-                    isBacking: lyric.isBacking
-                });
+            const rawLineText = lyric.text || '';
+            if (typeof containsRubyMarkup === 'function' && containsRubyMarkup(rawLineText)) {
+                const rubyTokens = parseInlineRubyTokens(rawLineText);
+                for (let i = 0; i < rubyTokens.length; i++) {
+                    items.push({
+                        text: rubyTokens[i].text,
+                        ruby: rubyTokens[i].ruby || '',
+                        time: lyric.time,
+                        endTime: lyric.time + 1,
+                        isBacking: lyric.isBacking
+                    });
+                }
+            } else {
+                const tokens = tokenizeText(rawLineText);
+                for (let i = 0; i < tokens.length; i++) {
+                    items.push({
+                        text: tokens[i],
+                        ruby: '',
+                        time: lyric.time,
+                        endTime: lyric.time + 1,
+                        isBacking: lyric.isBacking
+                    });
+                }
             }
         }
 
@@ -697,10 +735,12 @@ function drawFrame(currentTime) {
         const useBackingStyle = (backingVocalsMode === 'styled');
         const activeBackingFont = useBackingStyle ? backingFont : defaultFont;
 
-        function wrapItems(itemsList, activeFont) {
+        function wrapItems(itemsList, activeFont, baseFontPx = currentFontSize) {
             const lines = [];
             let currentLine = [];
             let currentLineWidth = 0;
+            const rubyFontPx = Math.max(12, Math.round(baseFontPx * 0.44));
+            const rubyFont = `600 ${rubyFontPx}px "${currentFont}", sans-serif`;
 
             for (let n = 0; n < itemsList.length; n++) {
                 const item = itemsList[n];
@@ -721,15 +761,35 @@ function drawFrame(currentTime) {
                 }
 
                 const cleanWidth = text.length > 0 ? context.measureText(text).width : 0;
-                const itemWidth = cleanWidth + (leadingSpaces + trailingSpaces) * spaceWidth;
+                const rubyText = item.ruby ? String(item.ruby).trim() : '';
+                let rubyWidth = 0;
+                if (rubyText) {
+                    context.font = rubyFont;
+                    rubyWidth = context.measureText(rubyText).width;
+                    context.font = activeFont;
+                }
+
+                // If the furigana/ruby reading is wider than the base kanji (e.g. こころ above 心),
+                // reserve horizontal breathing room so adjacent characters/ruby never collide.
+                const effectiveCleanWidth = rubyWidth > cleanWidth ? (rubyWidth + Math.round(baseFontPx * 0.12)) : cleanWidth;
+                const itemWidth = effectiveCleanWidth + (leadingSpaces + trailingSpaces) * spaceWidth;
 
                 item.renderText = text;
+                item.rubyText = rubyText;
+                item.rubyWidth = rubyWidth;
+                item.rubyFont = rubyFont;
+                item.rubyFontPx = rubyFontPx;
                 item.leadingSpaces = leadingSpaces;
                 item.trailingSpaces = trailingSpaces;
-                item.cleanWidth = cleanWidth;
+                item.baseCleanWidth = cleanWidth;
+                item.cleanWidth = effectiveCleanWidth;
 
                 if (currentLineWidth + itemWidth > maxWidth && currentLine.length > 0) {
-                    lines.push({ width: currentLineWidth, items: currentLine });
+                    lines.push({
+                        width: currentLineWidth,
+                        items: currentLine,
+                        hasRuby: currentLine.some(it => Boolean(it.rubyText))
+                    });
                     currentLine = [item];
                     currentLineWidth = itemWidth;
                 } else {
@@ -738,29 +798,47 @@ function drawFrame(currentTime) {
                 }
             }
             if (currentLine.length > 0) {
-                lines.push({ width: currentLineWidth, items: currentLine });
+                lines.push({
+                    width: currentLineWidth,
+                    items: currentLine,
+                    hasRuby: currentLine.some(it => Boolean(it.rubyText))
+                });
             }
             return lines;
         }
 
-        const mainLines = wrapItems(mainItems, defaultFont);
-        const backingLines = wrapItems(backingItems, activeBackingFont);
+        const mainLines = wrapItems(mainItems, defaultFont, currentFontSize);
+        const backingLines = wrapItems(backingItems, activeBackingFont, useBackingStyle ? backingFontSize : currentFontSize);
 
         let subLines = [];
-        if (lyric.subText && currentDualLanguage !== 'hide') {
-            const subTokens = tokenizeText(lyric.subText);
-            const subItems = [];
-            for (let i = 0; i < subTokens.length; i++) {
-                subItems.push({
-                    text: subTokens[i],
+        if (currentDualLanguage !== 'hide') {
+            const subFontSize = Math.round(currentFontSize * 0.62);
+            const subFont = `italic 500 ${subFontSize}px "${currentFont}", sans-serif`;
+            if (lyric.romanization && lyric.romanization.trim() && lyric.romanization.trim() !== (lyric.subText || '').trim()) {
+                const romTokens = tokenizeText(lyric.romanization.trim());
+                const romItems = romTokens.map(tok => ({
+                    text: tok,
+                    ruby: '',
                     time: lyric.time,
                     endTime: lyric.time + 1,
                     isBacking: false
-                });
+                }));
+                subLines.push(...wrapItems(romItems, subFont, subFontSize));
             }
-            const subFontSize = Math.round(currentFontSize * 0.62);
-            const subFont = `italic 500 ${subFontSize}px "${currentFont}", sans-serif`;
-            subLines = wrapItems(subItems, subFont);
+            if (lyric.subText) {
+                const subTokens = tokenizeText(lyric.subText);
+                const subItems = [];
+                for (let i = 0; i < subTokens.length; i++) {
+                    subItems.push({
+                        text: subTokens[i],
+                        ruby: '',
+                        time: lyric.time,
+                        endTime: lyric.time + 1,
+                        isBacking: false
+                    });
+                }
+                subLines.push(...wrapItems(subItems, subFont, subFontSize));
+            }
         }
 
         context.restore();
@@ -770,6 +848,7 @@ function drawFrame(currentTime) {
         lyric.cachedFont = font;
         lyric.cachedMaxWidth = maxWidth;
         lyric.cachedBackingMode = backingVocalsMode;
+        lyric.cachedRubySig = rubySignature;
         return result;
     }
 
@@ -796,10 +875,13 @@ function drawFrame(currentTime) {
 
         const linesToDraw = [];
         for (let i = 0; i < mainLines.length; i++) {
+            const rubyExtra = mainLines[i].hasRuby ? Math.round(currentFontSize * 0.36) : 0;
             linesToDraw.push({
                 line: mainLines[i],
                 font: defaultFont,
-                lineHeight: mainLineHeight,
+                baseFontPx: currentFontSize,
+                lineHeight: mainLineHeight + rubyExtra,
+                rubyExtra,
                 isBacking: false,
                 isSub: false
             });
@@ -808,16 +890,22 @@ function drawFrame(currentTime) {
             linesToDraw.push({
                 line: subLines[i],
                 font: subFont,
+                baseFontPx: subFontSize,
                 lineHeight: subLineHeight,
+                rubyExtra: 0,
                 isBacking: false,
                 isSub: true
             });
         }
         for (let i = 0; i < backingLines.length; i++) {
+            const bFontPx = useBackingStyle ? backingFontSize : currentFontSize;
+            const rubyExtra = backingLines[i].hasRuby ? Math.round(bFontPx * 0.36) : 0;
             linesToDraw.push({
                 line: backingLines[i],
                 font: useBackingStyle ? backingFont : defaultFont,
-                lineHeight: backingLineHeight,
+                baseFontPx: bFontPx,
+                lineHeight: backingLineHeight + rubyExtra,
+                rubyExtra,
                 isBacking: true,
                 isSub: false
             });
@@ -835,12 +923,60 @@ function drawFrame(currentTime) {
 
         let currentY = y - totalHeight / 2;
 
+        function renderLineItemsWithRuby(ctxRef, lineObj, drawItemObj, startXPos, baseLineY) {
+            ctxRef.save();
+            ctxRef.font = drawItemObj.font;
+            const spaceWidth = ctxRef.measureText(' ').width;
+            if (!lineObj.hasRuby) {
+                let plainStr = '';
+                for (let j = 0; j < lineObj.items.length; j++) {
+                    const it = lineObj.items[j];
+                    plainStr += ' '.repeat(it.leadingSpaces) + it.renderText + ' '.repeat(it.trailingSpaces);
+                }
+                ctxRef.fillText(plainStr, x, baseLineY);
+                ctxRef.restore();
+                return;
+            }
+
+            // When the line contains ruby annotations, position each item accurately and draw its ruby reading centered above the base text
+            const prevAlign = ctxRef.textAlign;
+            const prevBaseline = ctxRef.textBaseline;
+            ctxRef.textBaseline = 'middle';
+            let cursorX = startXPos;
+            const rubyY = baseLineY - Math.round(drawItemObj.baseFontPx * 0.68);
+
+            for (let j = 0; j < lineObj.items.length; j++) {
+                const it = lineObj.items[j];
+                cursorX += it.leadingSpaces * spaceWidth;
+                const slotWidth = it.cleanWidth;
+                const baseWidth = it.baseCleanWidth !== undefined ? it.baseCleanWidth : slotWidth;
+                const baseDrawX = cursorX + (slotWidth - baseWidth) / 2;
+
+                if (it.renderText) {
+                    ctxRef.font = drawItemObj.font;
+                    ctxRef.textAlign = 'left';
+                    ctxRef.fillText(it.renderText, baseDrawX, baseLineY);
+                }
+                if (it.rubyText) {
+                    ctxRef.font = it.rubyFont || `600 ${Math.round(drawItemObj.baseFontPx * 0.44)}px "${currentFont}", sans-serif`;
+                    ctxRef.textAlign = 'center';
+                    ctxRef.fillText(it.rubyText, cursorX + slotWidth / 2, rubyY);
+                }
+
+                cursorX += slotWidth + it.trailingSpaces * spaceWidth;
+            }
+
+            ctxRef.textAlign = prevAlign;
+            ctxRef.textBaseline = prevBaseline;
+            ctxRef.restore();
+        }
+
         for (let i = 0; i < linesToDraw.length; i++) {
             const drawItem = linesToDraw[i];
             const line = drawItem.line;
-            const lineY = currentY + drawItem.lineHeight / 2;
+            // Shift base text slightly down within its taller slot when ruby is present above it
+            const lineY = currentY + (drawItem.lineHeight / 2) + (drawItem.rubyExtra ? drawItem.rubyExtra * 0.35 : 0);
 
-            let currentX = x;
             context.font = drawItem.font;
 
             let lineText = '';
@@ -850,7 +986,7 @@ function drawFrame(currentTime) {
             }
 
             // Calculate alignment offset for active tracking/clipping
-            const textWidth = context.measureText(lineText).width;
+            const textWidth = line.hasRuby ? line.width : context.measureText(lineText).width;
             let startX = x;
             if (currentLyricAlignment === 'center') startX = x - textWidth / 2;
             else if (currentLyricAlignment === 'right') startX = x - textWidth;
@@ -891,13 +1027,13 @@ function drawFrame(currentTime) {
                     continue;
                 }
 
-                // Base inactive line
+                // Base inactive line (and inactive furigana above it)
                 context.fillStyle = isStyledBacking
                     ? `rgba(203, 213, 225, 0.25)`
                     : `rgba(203, 213, 225, 0.5)`;
                 context.shadowColor = 'transparent';
                 context.shadowBlur = 0;
-                context.fillText(lineText, x, lineY);
+                renderLineItemsWithRuby(context, line, drawItem, startX, lineY);
 
                 // Calculate active highlighted width
                 let activeWidth = 0;
@@ -943,7 +1079,7 @@ function drawFrame(currentTime) {
                     const isFullyActive = (lastItemProgress >= 1);
                     if (!isFullyActive) {
                         context.beginPath();
-                        context.rect(startX - blurRadius * 2, lineY - drawItem.lineHeight, activeWidth + blurRadius * 2, drawItem.lineHeight * 2);
+                        context.rect(startX - blurRadius * 2, lineY - drawItem.lineHeight * 1.25, activeWidth + blurRadius * 2, drawItem.lineHeight * 2.5);
                         context.clip();
                     }
 
@@ -954,7 +1090,7 @@ function drawFrame(currentTime) {
                     }
                     context.shadowColor = activeGlowColor;
                     context.shadowBlur = blurRadius;
-                    context.fillText(lineText, x, lineY);
+                    renderLineItemsWithRuby(context, line, drawItem, startX, lineY);
                     context.restore();
                 }
             } else {
@@ -964,7 +1100,7 @@ function drawFrame(currentTime) {
                     : `rgba(203, 213, 225, ${opacity * 0.5})`;
                 context.shadowColor = 'transparent';
                 context.shadowBlur = 0;
-                context.fillText(lineText, x, lineY);
+                renderLineItemsWithRuby(context, line, drawItem, startX, lineY);
             }
 
             currentY += drawItem.lineHeight;
@@ -1000,7 +1136,11 @@ function drawFrame(currentTime) {
         const subLineHeight = Math.round(subFontSize * currentLineSpacing);
         const gapBetween = (wrapped.mainLines.length > 0 && (wrapped.backingLines.length > 0 || subLines.length > 0)) ? 15 : 0;
 
-        heights[j] = wrapped.mainLines.length * mainLineHeight + subLines.length * subLineHeight + wrapped.backingLines.length * backingLineHeight + gapBetween;
+        const mainRubyExtra = wrapped.mainLines.reduce((acc, l) => acc + (l.hasRuby ? Math.round(currentFontSize * 0.36) : 0), 0);
+        const bFontPx = useBackingStyle ? backingFontSize : currentFontSize;
+        const backingRubyExtra = wrapped.backingLines.reduce((acc, l) => acc + (l.hasRuby ? Math.round(bFontPx * 0.36) : 0), 0);
+
+        heights[j] = wrapped.mainLines.length * mainLineHeight + mainRubyExtra + subLines.length * subLineHeight + wrapped.backingLines.length * backingLineHeight + backingRubyExtra + gapBetween;
     }
 
     // 2. Sequential layout starting at y = 0

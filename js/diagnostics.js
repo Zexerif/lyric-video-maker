@@ -220,8 +220,8 @@ function diagnoseLrc(text) {
         log.push('[OK] Skipping LRC-specific checks (TTML file — timestamps/duplicates/split-words not applicable).');
     }
 
-    // ─── 7. Word-Karaoke Tags in LRC (inline <word> tags or <timestamp> tags) ─
-    const karaokeLrcTagRegex = /<\d{2}:\d{2}[.:]\d{2,3}>|<\/?[a-zA-Z][a-zA-Z0-9]*>/g;
+    // ─── 7. Word-Karaoke Tags in LRC (inline <word> tags or <timestamp> tags, excluding <ruby>/<rb>/<rt>/<rp>) ─
+    const karaokeLrcTagRegex = /<\d{2}:\d{2}[.:]\d{2,3}>|<\/?(?!(?:ruby|rb|rt|rp)\b)[a-zA-Z][a-zA-Z0-9]*>/gi;
     const kaorakeTags = text.match(karaokeLrcTagRegex) || [];
     // Only flag if not TTML (isTtml defined at top of function)
     if (!isTtml && kaorakeTags.length > 0) {

@@ -42,9 +42,25 @@ function generateWaveform() {
 // Current playhead position in seconds (works while playing, scrubbing or paused)
 function getPlayheadTime() {
     if ((isPlaying || isRecording) && audioContext) {
-        return Math.max(0, audioContext.currentTime - startTime + pausedTime);
+        const rate = (!isRecording && typeof playbackRate === 'number' && playbackRate > 0) ? playbackRate : 1.0;
+        return Math.max(0, (audioContext.currentTime - startTime) * rate + pausedTime);
     }
     return Math.max(0, pausedTime || 0);
+}
+
+function setPlaybackSpeed(newRate) {
+    const rate = Math.max(0.25, Math.min(2.0, parseFloat(newRate) || 1.0));
+    if (isPlaying && !isRecording && audioContext) {
+        pausedTime = getPlayheadTime();
+        startTime = audioContext.currentTime;
+        if (audioSource && audioSource.playbackRate) {
+            try {
+                audioSource.playbackRate.value = rate;
+            } catch (_) {}
+        }
+    }
+    playbackRate = rate;
+    return playbackRate;
 }
 
 // Move the waveform playhead and keep its time label inside the waveform bounds
@@ -87,6 +103,9 @@ function syncPreviewToTime(time) {
     }
     if (typeof drawFrame === 'function') {
         drawFrame(time);
+    }
+    if (typeof updateMainLyricEditorPosition === 'function') {
+        updateMainLyricEditorPosition(time);
     }
 }
 
@@ -250,10 +269,14 @@ function renderLoop() {
     if (isRecording) {
         currentTime = audioContext.currentTime - startTime;
     } else {
-        currentTime = audioContext.currentTime - startTime + pausedTime;
+        const rate = (typeof playbackRate === 'number' && playbackRate > 0) ? playbackRate : 1.0;
+        currentTime = (audioContext.currentTime - startTime) * rate + pausedTime;
     }
 
     drawFrame(currentTime);
+    if (typeof updateMainLyricEditorPosition === 'function') {
+        updateMainLyricEditorPosition(currentTime);
+    }
 
     // Update progress bar
     if (isRecording && audioBuffer) {
@@ -303,11 +326,34 @@ function startPlayback() {
     }
 
     startTime = audioContext.currentTime;
+    if (audioSource.playbackRate && typeof playbackRate === 'number' && playbackRate > 0) {
+        try {
+            audioSource.playbackRate.value = playbackRate;
+        } catch (_) {}
+    }
     audioSource.start(0, pausedTime);
     isPlaying = true;
     playBtn.textContent = t('stopPreview') || 'Stop Preview';
 
     renderLoop();
+}
+
+function pausePlayback() {
+    const cur = getPlayheadTime();
+    if (audioSource) {
+        try { audioSource.stop(); } catch (_) {}
+        try { audioSource.disconnect(); } catch (_) {}
+    }
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+    }
+    isPlaying = false;
+    pausedTime = cur;
+    playBtn.textContent = t('previewVideo') || 'Preview Video';
+    if (audioBuffer && audioBuffer.duration > 0) {
+        updateScrubberUI(Math.min(1, cur / audioBuffer.duration), cur);
+    }
+    drawFrame(cur);
 }
 
 function stopPlayback() {

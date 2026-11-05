@@ -14,6 +14,7 @@ let isPlaying = false;
 let isRecording = false;
 let startTime = 0;
 let pausedTime = 0;
+let playbackRate = 1.0;
 let animationFrameId = null;
 let smoothedIndex = 0;
 

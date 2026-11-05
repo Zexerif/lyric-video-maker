@@ -1533,8 +1533,9 @@ footer {
 
 .studio-lyric-card {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--glass-border);
     border-radius: 12px;
@@ -1810,3 +1811,2098 @@ footer {
     transform: translateY(-1px);
     box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
 }
+
+
+/* ============================================================================
+   DEDICATED FULL-VIEWPORT LYRIC STUDIO WORKSPACE (AMLL-Inspired Studio UI)
+   Complete Custom Design System — Zero Unstyled Browser Chrome
+   ============================================================================ */
+
+.hidden {
+    display: none !important;
+}
+
+/* Base Scoped Reset inside Lyric Studio so NO button/input ever falls back to OS white chrome */
+#lyricStudioModal,
+#lyricStudioModal * {
+    box-sizing: border-box;
+}
+
+#lyricStudioModal button {
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0.03) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e4e4e7;
+    border-radius: 8px;
+    padding: 0.32rem 0.65rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.3);
+    user-select: none;
+    white-space: nowrap;
+}
+
+#lyricStudioModal button:hover:not(:disabled) {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.06) 100%);
+    border-color: rgba(255, 255, 255, 0.24);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+#lyricStudioModal button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+#lyricStudioModal button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+#lyricStudioModal input[type="text"],
+#lyricStudioModal input[type="number"],
+#lyricStudioModal textarea,
+#lyricStudioModal select {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: rgba(7, 8, 14, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    color: #f4f4f5;
+    border-radius: 8px;
+    padding: 0.38rem 0.65rem;
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    margin: 0;
+}
+
+#lyricStudioModal input[type="text"]:focus,
+#lyricStudioModal textarea:focus,
+#lyricStudioModal select:focus {
+    border-color: #8b5cf6;
+    background: rgba(10, 12, 22, 0.9);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
+}
+
+#lyricStudioModal input[type="checkbox"] {
+    accent-color: #8b5cf6;
+    width: 14px !important;
+    height: 14px !important;
+    margin: 0 !important;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* Full-Viewport Overlay Container */
+#lyricStudioModal.lyric-studio-viewport {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #07080e;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    z-index: 12000;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#lyricStudioModal.lyric-studio-viewport.active,
+#lyricStudioModal.lyric-studio-viewport.studio-open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+#lyricStudioModal.lyric-studio-viewport .lyric-studio-shell {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background:
+        radial-gradient(circle at 15% 0%, rgba(99, 102, 241, 0.11), transparent 42%),
+        radial-gradient(circle at 85% 100%, rgba(236, 72, 153, 0.08), transparent 42%),
+        #080911 !important;
+    display: grid !important;
+    grid-template-rows: 58px minmax(0, 1fr) 152px;
+    transform: none !important;
+    box-shadow: none !important;
+    overflow: hidden;
+    color: #f4f4f5;
+    gap: 0 !important;
+}
+
+#lyricStudioModal.lyric-studio-viewport .lyric-studio-shell::before {
+    display: none;
+}
+
+/* ============================================================================
+   1. TOP STUDIO HEADER
+   ============================================================================ */
+.lyric-studio-shell .studio-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    height: 58px;
+    background: rgba(12, 13, 22, 0.96);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+    z-index: 30;
+}
+
+.studio-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+}
+
+#lyricStudioModal .studio-back-btn {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #f4f4f5;
+    padding: 0.42rem 0.85rem;
+    border-radius: 9px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+#lyricStudioModal .studio-back-btn:hover {
+    border-color: rgba(165, 180, 252, 0.45);
+    background: rgba(99, 102, 241, 0.16);
+}
+
+.studio-brand-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.studio-title-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 0.1rem;
+}
+
+.studio-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.studio-logo-badge {
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: -0.01em;
+    color: #fff;
+    white-space: nowrap;
+}
+
+.studio-stats-pill {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #a5b4fc;
+    background: rgba(99, 102, 241, 0.16);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.studio-track-subtitle {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+}
+
+/* Mode Switcher Segmented Tabs */
+.studio-mode-tabs {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(4, 5, 10, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    padding: 0.22rem;
+    border-radius: 11px;
+    gap: 0.22rem;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+}
+
+#lyricStudioModal .studio-mode-tab {
+    padding: 0.36rem 0.85rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #a1a1aa;
+    font-size: 0.78rem;
+    font-weight: 600;
+    box-shadow: none;
+}
+
+#lyricStudioModal .studio-mode-tab .mode-tab-sub {
+    font-size: 0.66rem;
+    font-weight: 500;
+    opacity: 0.68;
+    padding-left: 0.35rem;
+    margin-left: 0.1rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+#lyricStudioModal .studio-mode-tab:hover {
+    color: #f4f4f5;
+    background: rgba(255, 255, 255, 0.05);
+    transform: none;
+}
+
+#lyricStudioModal .studio-mode-tab.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.38), rgba(236, 72, 153, 0.3));
+    border-color: rgba(139, 92, 246, 0.65);
+    color: #ffffff;
+    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.studio-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+#lyricStudioModal .studio-tool-btn {
+    padding: 0.38rem 0.72rem;
+    border-radius: 8px;
+    font-size: 0.76rem;
+}
+
+.studio-undo-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+}
+
+#lyricStudioModal .studio-icon-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 8px;
+    font-size: 0.88rem;
+}
+
+#lyricStudioModal .studio-apply-btn {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+    padding: 0.42rem 0.95rem;
+    border-radius: 9px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+#lyricStudioModal .studio-apply-btn:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 6px 20px rgba(236, 72, 153, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* Shortcuts Popover */
+.studio-popover-anchor {
+    position: relative;
+}
+
+.studio-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 360px;
+    background: #131524;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+    padding: 0.9rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    z-index: 200;
+}
+
+.studio-popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.55rem;
+    margin-bottom: 0.55rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.85rem;
+}
+
+.studio-shortcuts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.38rem;
+    font-size: 0.76rem;
+}
+
+.shortcut-group-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #a78bfa;
+    margin-top: 0.35rem;
+}
+
+.shortcut-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    color: #d4d4d8;
+}
+
+.shortcut-item kbd,
+.studio-sync-prompt-banner kbd {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 0.08rem 0.4rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: #fff;
+}
+
+/* ============================================================================
+   2. MAIN STUDIO BODY GRID & SUB-TOOLBARS
+   ============================================================================ */
+.studio-body-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 348px;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.studio-main-stage {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #0a0b12;
+}
+
+.studio-mode-workspace {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.studio-subtoolbar,
+.studio-sync-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(15, 17, 28, 0.94);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+}
+
+.studio-subtoolbar-left,
+.studio-subtoolbar-right,
+.studio-sync-granularity,
+.studio-sync-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.38rem;
+    flex-wrap: wrap;
+}
+
+.studio-toolbar-sep {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 0 0.15rem;
+}
+
+.toolbar-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9ca3af;
+    margin-right: 0.15rem;
+}
+
+#lyricStudioModal .studio-pill-btn {
+    padding: 0.32rem 0.68rem;
+    border-radius: 7px;
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+#lyricStudioModal .studio-pill-btn.accent {
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.28) 0%, rgba(99, 102, 241, 0.14) 100%);
+    border-color: rgba(129, 140, 248, 0.5);
+    color: #e0e7ff;
+}
+
+#lyricStudioModal .studio-pill-btn.accent:hover {
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.42) 0%, rgba(99, 102, 241, 0.24) 100%);
+    border-color: #818cf8;
+    color: #ffffff;
+}
+
+#lyricStudioModal .studio-pill-btn.primary-pulse {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.32), rgba(139, 92, 246, 0.32));
+    border-color: #f472b6;
+    color: #fdf2f8;
+    box-shadow: 0 0 12px rgba(236, 72, 153, 0.25);
+}
+
+#lyricStudioModal .studio-pill-btn.danger-subtle {
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.32);
+}
+
+#lyricStudioModal .studio-pill-btn.danger-subtle:hover {
+    background: rgba(239, 68, 68, 0.22);
+    border-color: #ef4444;
+    color: #fff;
+}
+
+.studio-inline-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    padding: 0.28rem 0.62rem;
+    border-radius: 7px;
+    font-size: 0.73rem;
+    font-weight: 600;
+    color: #d4d4d8;
+    cursor: pointer;
+    margin: 0;
+    user-select: none;
+    transition: all 0.15s ease;
+}
+
+.studio-inline-toggle:hover {
+    border-color: rgba(167, 139, 250, 0.45);
+    background: rgba(139, 92, 246, 0.1);
+    color: #fff;
+}
+
+.studio-latency-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    padding: 0.18rem 0.5rem;
+    border-radius: 7px;
+    font-size: 0.72rem;
+    color: #a1a1aa;
+}
+
+#lyricStudioModal .studio-mini-select {
+    padding: 0.14rem 0.35rem !important;
+    font-size: 0.72rem !important;
+    border-radius: 5px !important;
+    background: rgba(0, 0, 0, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: #e4e4e7 !important;
+    width: auto !important;
+}
+
+/* ============================================================================
+   A. EDIT MODE: LYRIC CARDS, WORD TOKEN CHIPS & SYLLABLE SPLITTER WORKBENCH
+   ============================================================================ */
+.lyric-studio-shell .studio-lines-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.85rem 1.1rem 2.5rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+/* CRITICAL OVERRIDE: Override legacy `.studio-lyric-card` row layout so cards stack vertically! */
+#lyricStudioModal .studio-lyric-card,
+.lyric-studio-shell .studio-lyric-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.55rem !important;
+    background: linear-gradient(180deg, rgba(22, 24, 38, 0.88) 0%, rgba(16, 18, 29, 0.92) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    border-radius: 12px !important;
+    padding: 0.7rem 0.9rem !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+#lyricStudioModal .studio-lyric-card:hover {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+#lyricStudioModal .studio-lyric-card.selected-card {
+    border-color: rgba(139, 92, 246, 0.75) !important;
+    background: linear-gradient(180deg, rgba(34, 29, 62, 0.9) 0%, rgba(20, 21, 36, 0.95) 100%) !important;
+    box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+#lyricStudioModal .studio-lyric-card.is-bg-line {
+    border-left: 3px solid #ec4899 !important;
+}
+
+#lyricStudioModal .studio-lyric-card.is-duet-line {
+    border-right: 3px solid #38bdf8 !important;
+}
+
+/* Card Top Row: Line #, Reorder, Time Range, Role Pills, Quick Actions */
+.studio-card-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.studio-card-left-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.studio-card-index {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    color: #a1a1aa;
+    font-size: 0.76rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    width: auto !important;
+}
+
+.studio-reorder-btns {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.18rem;
+}
+
+#lyricStudioModal .studio-move-up-btn,
+#lyricStudioModal .studio-move-down-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 5px;
+    font-size: 0.68rem;
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.studio-card-time-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    background: rgba(0, 0, 0, 0.32);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    padding: 0.2rem 0.45rem;
+    border-radius: 8px;
+}
+
+#lyricStudioModal .studio-nudge-btn {
+    padding: 0.18rem 0.42rem;
+    font-size: 0.68rem;
+    font-family: 'JetBrains Mono', monospace;
+    border-radius: 5px;
+    color: #a1a1aa;
+}
+
+.studio-card-time-val,
+.studio-card-endtime-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 0.16rem 0.48rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.studio-card-time-val {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+}
+
+.studio-card-time-val:hover {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38bdf8;
+}
+
+.studio-card-endtime-val {
+    color: #c084fc;
+    background: rgba(192, 132, 252, 0.1);
+    border: 1px solid rgba(192, 132, 252, 0.25);
+}
+
+.studio-card-endtime-val:hover {
+    background: rgba(192, 132, 252, 0.2);
+    border-color: #c084fc;
+}
+
+.studio-time-arrow {
+    color: #71717a;
+    font-size: 0.75rem;
+    padding: 0 0.1rem;
+}
+
+#lyricStudioModal .studio-stamp-btn {
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.28) 0%, rgba(99, 102, 241, 0.15) 100%);
+    border: 1px solid rgba(129, 140, 248, 0.5);
+    color: #e0e7ff;
+    padding: 0.18rem 0.52rem;
+    font-size: 0.7rem;
+    border-radius: 6px;
+}
+
+#lyricStudioModal .studio-stamp-btn:hover {
+    background: #6366f1;
+    color: #fff;
+}
+
+#lyricStudioModal .studio-stamp-end-btn {
+    background: linear-gradient(180deg, rgba(168, 85, 247, 0.24) 0%, rgba(168, 85, 247, 0.12) 100%);
+    border: 1px solid rgba(192, 132, 252, 0.45);
+    color: #f3e8ff;
+    padding: 0.18rem 0.52rem;
+    font-size: 0.7rem;
+    border-radius: 6px;
+}
+
+#lyricStudioModal .studio-stamp-end-btn:hover {
+    background: #9333ea;
+    color: #fff;
+}
+
+/* Role Pills (BG & Duet) */
+.studio-card-role-pills {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+#lyricStudioModal .studio-role-pill {
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#lyricStudioModal .studio-role-pill.active-bg {
+    background: rgba(236, 72, 153, 0.22);
+    border-color: #ec4899;
+    color: #f9a8d4;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.25);
+}
+
+#lyricStudioModal .studio-role-pill.active-duet {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38bdf8;
+    color: #bae6fd;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+/* Card Line Action Buttons (Play, Insert Above/Below, Duplicate, Merge, Delete) */
+.studio-card-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+}
+
+#lyricStudioModal .studio-play-line-btn,
+#lyricStudioModal .studio-insert-above-btn,
+#lyricStudioModal .studio-insert-below-btn,
+#lyricStudioModal .studio-dup-line-btn,
+#lyricStudioModal .studio-merge-line-btn,
+#lyricStudioModal .studio-del-line-btn {
+    height: 26px;
+    min-width: 26px;
+    padding: 0 0.42rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #a1a1aa;
+}
+
+#lyricStudioModal .studio-play-line-btn:hover {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38bdf8;
+    color: #7dd3fc;
+}
+
+#lyricStudioModal .studio-del-line-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+/* Word / Syllable Chips Ribbon */
+.studio-word-chips-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.32rem;
+    padding: 0.15rem 0;
+}
+
+.studio-word-chip-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+#lyricStudioModal .studio-word-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.24rem 0.56rem;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    color: #e4e4e7;
+    font-size: 0.79rem;
+    font-weight: 600;
+}
+
+#lyricStudioModal .studio-word-chip:hover {
+    border-color: #a78bfa;
+    background: rgba(139, 92, 246, 0.18);
+    color: #fff;
+}
+
+#lyricStudioModal .studio-word-chip.timed-chip {
+    border-color: rgba(52, 211, 153, 0.42);
+    background: rgba(16, 185, 129, 0.11);
+}
+
+#lyricStudioModal .studio-word-chip.active-chip {
+    border-color: #f59e0b !important;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.28), rgba(217, 119, 6, 0.2)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+#lyricStudioModal .studio-word-chip.bg-chip {
+    border-left: 2px solid #ec4899;
+}
+
+.studio-word-chip .chip-text-stack {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
+}
+
+.studio-word-chip .chip-ruby {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: #c4b5fd;
+    line-height: 1;
+    margin-bottom: 0.08rem;
+    letter-spacing: 0.01em;
+}
+
+#lyricStudioModal .studio-word-chip.active-chip .chip-ruby {
+    color: #fde68a;
+}
+
+.studio-word-chip .chip-time-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #6ee7b7;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 0.05rem 0.32rem;
+    border-radius: 4px;
+}
+
+.syllable-join-dot {
+    color: #f472b6;
+    font-weight: 900;
+    font-size: 0.95rem;
+    line-height: 1;
+    padding: 0 0.05rem;
+}
+
+/* Inline Syllable Splitter & Token Workbench Bar */
+.studio-inline-token-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.14), rgba(236, 72, 153, 0.09));
+    border: 1px solid rgba(167, 139, 250, 0.4);
+    border-radius: 9px;
+    padding: 0.45rem 0.7rem;
+}
+
+.token-bar-left,
+.token-bar-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.token-bar-badge {
+    font-size: 0.73rem;
+    color: #ddd6fe;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    padding: 0.16rem 0.5rem;
+    border-radius: 6px;
+}
+
+.studio-char-split-row {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 7px;
+    padding: 0.15rem 0.38rem;
+    gap: 0.08rem;
+}
+
+.studio-char-split-row .char-box {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #f4f4f5;
+    padding: 0.05rem 0.15rem;
+}
+
+#lyricStudioModal .char-split-point-btn {
+    width: 14px;
+    height: 20px;
+    padding: 0;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 900;
+    color: #a78bfa;
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px dashed rgba(167, 139, 250, 0.45);
+}
+
+#lyricStudioModal .char-split-point-btn:hover {
+    background: #ec4899;
+    border-color: #f9a8d4;
+    color: #fff;
+    transform: scale(1.15);
+}
+
+#lyricStudioModal .studio-token-ruby-input {
+    width: 145px !important;
+    padding: 0.22rem 0.5rem !important;
+    font-size: 0.74rem !important;
+    border-radius: 6px !important;
+    background: rgba(0, 0, 0, 0.42) !important;
+    border: 1px solid rgba(196, 181, 253, 0.38) !important;
+    color: #ede9fe !important;
+}
+
+#lyricStudioModal .studio-syllable-split-input {
+    width: 165px !important;
+    padding: 0.24rem 0.55rem !important;
+    font-size: 0.76rem !important;
+    border-radius: 6px !important;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+#lyricStudioModal .studio-token-action-btn {
+    padding: 0.24rem 0.55rem;
+    font-size: 0.72rem;
+    border-radius: 6px;
+}
+
+#lyricStudioModal .studio-token-action-btn.primary-token-btn {
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+/* Card Text Inputs (Main Lyric + Secondary Translation & Romanization Row) */
+.studio-card-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.38rem;
+    width: 100%;
+}
+
+#lyricStudioModal .studio-text-input {
+    width: 100% !important;
+    background: rgba(6, 7, 13, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.11) !important;
+    color: #ffffff !important;
+    font-size: 0.88rem !important;
+    font-weight: 500;
+    padding: 0.42rem 0.7rem !important;
+    border-radius: 8px !important;
+}
+
+.studio-secondary-inputs-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+    width: 100%;
+}
+
+#lyricStudioModal .studio-subtext-input,
+#lyricStudioModal .studio-roman-input {
+    width: 100% !important;
+    background: rgba(6, 7, 13, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    color: #cbd5e1 !important;
+    font-size: 0.76rem !important;
+    font-style: normal !important;
+    padding: 0.3rem 0.6rem !important;
+    border-radius: 7px !important;
+}
+
+/* ============================================================================
+   B. SYNC MODE (AMLL-Style Rapid Keyboard Timing)
+   ============================================================================ */
+#lyricStudioModal .studio-sync-gran-btn,
+#lyricStudioModal .studio-preview-layout-btn {
+    padding: 0.32rem 0.72rem;
+    border-radius: 7px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #a1a1aa;
+}
+
+#lyricStudioModal .studio-sync-gran-btn.active,
+#lyricStudioModal .studio-preview-layout-btn.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.34), rgba(99, 102, 241, 0.24));
+    border-color: #8b5cf6;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
+}
+
+.studio-sync-prompt-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: rgba(236, 72, 153, 0.1);
+    border: 1px solid rgba(236, 72, 153, 0.28);
+    padding: 0.26rem 0.7rem;
+    border-radius: 8px;
+    font-size: 0.73rem;
+}
+
+.sync-banner-target {
+    font-weight: 700;
+    color: #f472b6;
+}
+
+.sync-banner-target.is-singing-now {
+    color: #34d399;
+    text-shadow: 0 0 10px rgba(52, 211, 153, 0.45);
+}
+
+#lyricStudioModal .amll-key-btn kbd {
+    display: inline-block;
+    padding: 0.06rem 0.34rem;
+    margin-right: 0.18rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 800;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+#lyricStudioModal .amll-key-f {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(5, 150, 105, 0.22)) !important;
+    border-color: rgba(52, 211, 153, 0.55) !important;
+    color: #ecfdf5 !important;
+}
+
+#lyricStudioModal .amll-key-g {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.38), rgba(236, 72, 153, 0.32)) !important;
+    border-color: rgba(244, 114, 182, 0.65) !important;
+    color: #ffffff !important;
+}
+
+#lyricStudioModal .amll-key-h {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(59, 130, 246, 0.2)) !important;
+    border-color: rgba(56, 189, 248, 0.5) !important;
+    color: #e0f2fe !important;
+}
+
+#lyricStudioModal .amll-key-r {
+    background: rgba(245, 158, 11, 0.16) !important;
+    border-color: rgba(251, 191, 36, 0.45) !important;
+    color: #fef3c7 !important;
+}
+
+#lyricStudioModal .key-pressed-flash {
+    transform: scale(0.95) !important;
+    filter: brightness(1.35) !important;
+    box-shadow: 0 0 16px rgba(244, 114, 182, 0.65) !important;
+}
+
+.studio-sync-stage {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 1.4rem 5rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sync-line-row {
+    background: rgba(18, 20, 32, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 13px;
+    padding: 0.8rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    transition: none !important;
+}
+
+.sync-line-row.sync-line-target {
+    background: linear-gradient(180deg, rgba(40, 31, 74, 0.92) 0%, rgba(23, 22, 42, 0.95) 100%);
+    border-color: #a78bfa;
+    box-shadow: 0 6px 24px rgba(99, 102, 241, 0.26);
+}
+
+.sync-line-row.sync-line-playing {
+    border-left: 4px solid #10b981;
+}
+
+.sync-line-row.sync-line-bg {
+    border-left: 3px solid #ec4899;
+}
+
+.sync-line-row.sync-line-duet {
+    border-right: 3px solid #38bdf8;
+}
+
+.sync-line-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.sync-line-left,
+.sync-line-right-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.sync-line-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #a1a1aa;
+}
+
+.sync-role-badge {
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 0.1rem 0.42rem;
+    border-radius: 5px;
+}
+
+.sync-role-badge.bg-badge {
+    background: rgba(236, 72, 153, 0.2);
+    color: #f9a8d4;
+    border: 1px solid rgba(236, 72, 153, 0.4);
+}
+
+.sync-role-badge.duet-badge {
+    background: rgba(56, 189, 248, 0.2);
+    color: #bae6fd;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+#lyricStudioModal .sync-line-time-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.26);
+    padding: 0.18rem 0.5rem;
+    border-radius: 6px;
+}
+
+.sync-tokens-flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.42rem;
+    align-items: center;
+}
+
+.sync-token-card {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.4rem 0.68rem;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: none !important;
+}
+
+.sync-token-card:hover {
+    border-color: rgba(167, 139, 250, 0.5);
+    background: rgba(139, 92, 246, 0.12);
+}
+
+.sync-token-card.sync-token-timed {
+    border-color: rgba(52, 211, 153, 0.42);
+    background: rgba(16, 185, 129, 0.09);
+}
+
+.sync-token-card.sync-cursor-active {
+    background: rgba(236, 72, 153, 0.24);
+    border: 1px solid #f472b6;
+    box-shadow: 0 0 0 1.5px #f472b6, 0 0 16px rgba(236, 72, 153, 0.48);
+    transform: translateY(-1px);
+}
+
+.sync-token-card.sync-token-singing,
+.sync-token-card.sync-token-holding {
+    background: rgba(16, 185, 129, 0.28);
+    border: 1px solid #34d399;
+    box-shadow: 0 0 0 1.5px #34d399, 0 0 20px rgba(16, 185, 129, 0.6);
+}
+
+#lyricStudioModal .sync-line-retry-btn {
+    color: #fcd34d;
+    border-color: rgba(251, 191, 36, 0.35);
+    background: rgba(245, 158, 11, 0.12);
+}
+
+#lyricStudioModal .sync-line-retry-btn:hover {
+    background: rgba(245, 158, 11, 0.28);
+    border-color: #fbbf24;
+    color: #fff;
+}
+
+.sync-token-fill-bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: var(--sync-fill, 0%);
+    background: linear-gradient(90deg, #8b5cf6, #ec4899, #10b981);
+    pointer-events: none;
+}
+
+.sync-token-top {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.1rem;
+}
+
+.sync-token-text-stack {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
+}
+
+.sync-token-ruby {
+    font-size: 0.64rem;
+    font-weight: 600;
+    color: #c4b5fd;
+    line-height: 1;
+    margin-bottom: 0.08rem;
+}
+
+.sync-token-text {
+    font-size: 0.94rem;
+    font-weight: 700;
+    color: #f4f4f5;
+}
+
+.sync-syllable-hyphen {
+    color: #f472b6;
+    font-weight: 800;
+    font-size: 0.8rem;
+}
+
+.sync-token-times {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+#lyricStudioModal .sync-time-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.64rem;
+    padding: 0.08rem 0.32rem;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.38);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #a5b4fc;
+}
+
+.sync-line-submeta {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.74rem;
+    color: #9ca3af;
+}
+
+/* ============================================================================
+   C. PREVIEW MODE (AMLL Apple Music Karaoke + Video Canvas Split View)
+   ============================================================================ */
+.studio-preview-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    overflow: hidden;
+}
+
+.studio-preview-body.layout-split {
+    grid-template-columns: 1fr 1fr;
+}
+
+.studio-preview-body.layout-apple,
+.studio-preview-body.layout-amll {
+    grid-template-columns: 1fr;
+}
+
+.studio-preview-body.layout-apple .studio-canvas-preview-pane,
+.studio-preview-body.layout-amll .studio-canvas-preview-pane {
+    display: none;
+}
+
+.studio-preview-body.layout-canvas {
+    grid-template-columns: 1fr;
+}
+
+.studio-preview-body.layout-canvas .studio-apple-preview-pane {
+    display: none;
+}
+
+.studio-apple-preview-pane {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 25% 20%, rgba(99, 102, 241, 0.22), transparent 55%),
+        radial-gradient(circle at 75% 80%, rgba(236, 72, 153, 0.18), transparent 55%),
+        #090a12;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.studio-amll-header-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    background: rgba(10, 11, 18, 0.75);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    z-index: 5;
+}
+
+.studio-amll-art {
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+}
+
+.studio-amll-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.studio-amll-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.studio-amll-artist {
+    font-size: 0.74rem;
+    color: #9ca3af;
+}
+
+.studio-amll-hint {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: #71717a;
+}
+
+.studio-apple-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem 2.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+    scroll-behavior: smooth;
+}
+
+.amll-spacer {
+    height: 18vh;
+    flex-shrink: 0;
+}
+
+.amll-lyric-line {
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+    padding: 0.65rem 0.95rem;
+    border-radius: 14px;
+    cursor: pointer;
+    opacity: 0.35;
+    transform: scale(0.96);
+    transform-origin: left center;
+    transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease;
+}
+
+.amll-lyric-line:hover {
+    opacity: 0.78;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.amll-lyric-line.amll-past {
+    opacity: 0.24;
+}
+
+.amll-lyric-line.amll-active {
+    opacity: 1;
+    transform: scale(1.02);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.amll-lyric-line.amll-bg-tuck {
+    margin-top: -0.5rem;
+    padding-left: 1.6rem;
+    font-size: 0.82em;
+}
+
+.amll-lyric-line.amll-duet-right {
+    align-items: flex-end;
+    text-align: right;
+    transform-origin: right center;
+}
+
+.amll-singer-tag {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #38bdf8;
+}
+
+.amll-singer-tag.bg-tag {
+    color: #f472b6;
+}
+
+.amll-main-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.26em;
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+}
+
+.amll-word {
+    --amll-fill: 0%;
+    --word-fill: 0%;
+    display: inline-block;
+    background: linear-gradient(90deg, #ffffff var(--word-fill, var(--amll-fill)), rgba(255, 255, 255, 0.32) var(--word-fill, var(--amll-fill)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: transform 0.14s ease;
+}
+
+.amll-word ruby {
+    ruby-align: center;
+    ruby-position: over;
+}
+
+.amll-word rt {
+    font-size: 0.45em;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+}
+
+.amll-word.amll-word-sung {
+    --amll-fill: 100%;
+    --word-fill: 100%;
+}
+
+.amll-word.amll-word-singing {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 4px 12px rgba(255, 255, 255, 0.3));
+}
+
+.amll-roman-line {
+    font-size: 0.8rem;
+    color: rgba(199, 210, 254, 0.82);
+    font-weight: 500;
+}
+
+.amll-trans-line {
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.68);
+    font-weight: 600;
+}
+
+.studio-canvas-preview-pane {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: #06070c;
+}
+
+.studio-canvas-frame-wrap {
+    width: 100%;
+    max-width: 860px;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
+}
+
+#studioFullPreviewCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+/* ============================================================================
+   RIGHT CONTEXT-SENSITIVE INSPECTOR SIDEBAR (Dynamic & Static Classes)
+   ============================================================================ */
+.studio-inspector-sidebar {
+    background: #0e101b;
+    border-left: 1px solid rgba(255, 255, 255, 0.09);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.75rem;
+    gap: 0.7rem;
+}
+
+.inspector-scroll-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.inspector-card,
+.inspector-section {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.015) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.inspector-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #e4e4e7;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.inspector-subtle-tag {
+    font-size: 0.66rem;
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 0.08rem 0.42rem;
+    border-radius: 999px;
+}
+
+.inspector-nav-btns {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+}
+
+#lyricStudioModal .insp-mini-btn,
+#lyricStudioModal .inspector-mini-btn {
+    padding: 0.22rem 0.48rem;
+    font-size: 0.72rem;
+    border-radius: 6px;
+}
+
+#lyricStudioModal .insp-mini-btn.accent,
+#lyricStudioModal .inspector-mini-btn.accent {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: #a78bfa;
+    color: #fff;
+}
+
+.inspector-mini-canvas-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.inspector-mini-canvas-wrap canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+.insp-time-grid,
+.inspector-time-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.insp-time-box,
+.inspector-field,
+.insp-field-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.insp-time-box label,
+.inspector-field label,
+.insp-field-row label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #9ca3af;
+    margin: 0;
+}
+
+.insp-time-input-row,
+.inspector-time-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+#lyricStudioModal .insp-time-input-row input,
+#lyricStudioModal .inspector-time-row input {
+    flex: 1;
+    min-width: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem !important;
+    padding: 0.3rem 0.45rem !important;
+}
+
+.insp-nudge-pair,
+.inspector-nudge-strip {
+    display: flex;
+    gap: 0.25rem;
+}
+
+#lyricStudioModal .insp-nudge-btn,
+#lyricStudioModal .insp-word-nudge-btn {
+    flex: 1;
+    padding: 0.16rem 0.25rem;
+    font-size: 0.66rem;
+    font-family: 'JetBrains Mono', monospace;
+    border-radius: 5px;
+    color: #a1a1aa;
+}
+
+.insp-toggles-grid,
+.inspector-toggles-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+}
+
+.insp-toggle-card,
+.inspector-toggle-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #d4d4d8;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    padding: 0.38rem 0.52rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 0;
+    transition: all 0.15s ease;
+}
+
+.insp-toggle-card.active-bg {
+    background: rgba(236, 72, 153, 0.18);
+    border-color: #ec4899;
+    color: #fbcfe8;
+}
+
+.insp-toggle-card.active-duet {
+    background: rgba(56, 189, 248, 0.18);
+    border-color: #38bdf8;
+    color: #bae6fd;
+}
+
+.insp-line-actions-grid,
+.inspector-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+}
+
+#lyricStudioModal .insp-action-btn,
+#lyricStudioModal .inspector-action-btn {
+    padding: 0.34rem 0.5rem;
+    font-size: 0.72rem;
+    border-radius: 7px;
+    width: 100%;
+}
+
+#lyricStudioModal .insp-action-btn.primary {
+    background: rgba(99, 102, 241, 0.22);
+    border-color: rgba(129, 140, 248, 0.45);
+    color: #e0e7ff;
+}
+
+#lyricStudioModal .insp-action-btn.danger,
+#lyricStudioModal .inspector-action-btn.danger {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.32);
+    color: #fca5a5;
+}
+
+.insp-token-strip,
+.inspector-token-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.28rem;
+    padding: 0.35rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+#lyricStudioModal .insp-tok-pill,
+#lyricStudioModal .insp-token-chip {
+    padding: 0.18rem 0.48rem;
+    font-size: 0.72rem;
+    border-radius: 6px;
+}
+
+#lyricStudioModal .insp-tok-pill.active,
+#lyricStudioModal .insp-token-chip.active {
+    background: rgba(245, 158, 11, 0.28);
+    border-color: #f59e0b;
+    color: #fff;
+}
+
+.insp-inline-check,
+.inspector-space-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    color: #d4d4d8;
+    cursor: pointer;
+    margin: 0.1rem 0;
+}
+
+.insp-syllable-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.38rem;
+    padding-top: 0.35rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ============================================================================
+   3. BOTTOM PERSISTENT AUDIO & TIMELINE DOCK
+   ============================================================================ */
+.studio-audio-dock {
+    background: #0b0c15;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: 152px;
+    padding: 0.45rem 1rem 0.55rem 1rem;
+    gap: 0.4rem;
+    z-index: 25;
+}
+
+.studio-dock-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.studio-transport-group,
+.studio-speed-group,
+.studio-volume-group,
+.studio-zoom-group {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+#lyricStudioModal .studio-play-btn {
+    width: 36px;
+    height: 30px;
+    padding: 0;
+    border-radius: 8px;
+    border: 1px solid rgba(167, 139, 250, 0.65);
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+}
+
+#lyricStudioModal .studio-dock-btn,
+#lyricStudioModal .studio-dock-icon-btn,
+#lyricStudioModal .studio-speed-pill {
+    padding: 0.24rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+#lyricStudioModal .studio-dock-btn.active,
+#lyricStudioModal .studio-speed-pill.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(139, 92, 246, 0.25));
+    border-color: #818cf8;
+    color: #fff;
+}
+
+.studio-time-readout {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 0.22rem 0.62rem;
+    border-radius: 7px;
+    margin-left: 0.2rem;
+}
+
+.dock-label {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    font-weight: 600;
+}
+
+#lyricStudioModal .studio-speed-select {
+    width: auto !important;
+    padding: 0.18rem 0.45rem !important;
+    font-size: 0.72rem !important;
+    border-radius: 6px !important;
+}
+
+.studio-range-slider {
+    width: 88px !important;
+    margin: 0 !important;
+    accent-color: #8b5cf6;
+}
+
+.studio-zoom-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: #a5b4fc;
+    min-width: 34px;
+    text-align: center;
+}
+
+.studio-timeline-container {
+    flex: 1;
+    min-height: 86px;
+    background: #08090f;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+#studioTimelineCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ============================================================================
+   STUDIO SUB-MODALS (Batch Paste & Import/Export) & TOAST
+   ============================================================================ */
+.studio-submodal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 6, 12, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 12500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.studio-submodal-card {
+    width: 100%;
+    max-width: 680px;
+    background: #131524;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+}
+
+.studio-submodal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.studio-submodal-header h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #fff;
+}
+
+.studio-submodal-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #9ca3af;
+    line-height: 1.45;
+}
+
+#lyricStudioModal .studio-submodal-textarea {
+    width: 100% !important;
+    background: rgba(0, 0, 0, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 10px !important;
+    color: #f4f4f5 !important;
+    padding: 0.75rem !important;
+    font-size: 0.84rem !important;
+    resize: vertical;
+}
+
+#lyricStudioModal .studio-submodal-textarea.mono {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.studio-submodal-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.studio-submodal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.studio-io-tabs,
+.studio-format-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+#lyricStudioModal .studio-io-tab.active,
+#lyricStudioModal .studio-fmt-btn.active {
+    background: rgba(99, 102, 241, 0.28);
+    border-color: #818cf8;
+    color: #fff;
+}
+
+.studio-io-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.studio-import-file-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.studio-file-label {
+    font-size: 0.78rem;
+    color: #9ca3af;
+}
+
+.studio-toast {
+    position: fixed;
+    bottom: 170px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    z-index: 13000;
+}
+
+@media (max-width: 1024px) {
+    .studio-body-grid {
+        grid-template-columns: 1fr;
+    }
+    .studio-inspector-sidebar {
+        display: none;
+    }
+}
+
+
+/* Live Playing Indicator for Studio Cards & Word Chips */
+#lyricStudioModal .studio-lyric-card.playing-line {
+    border-color: rgba(56, 189, 248, 0.75) !important;
+    background: linear-gradient(180deg, rgba(20, 36, 62, 0.92) 0%, rgba(14, 24, 42, 0.95) 100%) !important;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.28) !important;
+}
+
+#lyricStudioModal .studio-lyric-card.playing-line .studio-card-index {
+    color: #38bdf8 !important;
+    background: rgba(56, 189, 248, 0.2) !important;
+    border-color: rgba(56, 189, 248, 0.5) !important;
+}
+
+#lyricStudioModal .studio-word-chip.singing-chip {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(139, 92, 246, 0.35)) !important;
+    border-color: #38bdf8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.55) !important;
+    transform: scale(1.04) translateY(-1px);
+}
+
+#lyricStudioModal .studio-word-chip.sung-chip {
+    opacity: 0.85;
+    border-color: rgba(52, 211, 153, 0.45);
+    background: rgba(16, 185, 129, 0.14);
+}
+
+.studio-position-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.22rem 0.65rem;
+    border-radius: 7px;
+    margin-left: 0.25rem;
+    transition: all 0.16s ease;
+    white-space: nowrap;
+}
+
+.studio-position-badge.active {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.35);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+}
+
+/* Thumbnail Generator Responsive Grid */
+@media (max-width: 820px) {
+    .thumbnail-studio-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+

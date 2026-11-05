@@ -12,7 +12,21 @@ const ShortcutsManager = {
                 const shortcutsModal = document.getElementById('shortcutsModal');
                 const fixModal = document.getElementById('fixModal');
                 const customExportModal = document.getElementById('customExportModal');
+                const thumbnailPromptModal = document.getElementById('thumbnailPromptModal');
+                const thumbnailGeneratorModal = document.getElementById('thumbnailGeneratorModal');
 
+                if (thumbnailPromptModal && thumbnailPromptModal.classList.contains('active')) {
+                    if (typeof ThumbnailGenerator !== 'undefined') ThumbnailGenerator.closePrompt();
+                    else thumbnailPromptModal.classList.remove('active');
+                    e.preventDefault();
+                    return;
+                }
+                if (thumbnailGeneratorModal && thumbnailGeneratorModal.classList.contains('active')) {
+                    if (typeof ThumbnailGenerator !== 'undefined') ThumbnailGenerator.closeGenerator();
+                    else thumbnailGeneratorModal.classList.remove('active');
+                    e.preventDefault();
+                    return;
+                }
                 if (shortcutsModal && shortcutsModal.classList.contains('active')) {
                     shortcutsModal.classList.remove('active');
                     e.preventDefault();
@@ -35,19 +49,15 @@ const ShortcutsManager = {
                 }
             }
 
-            // Studio-specific shortcut handling for Tap-to-Sync
+            // Delegate to LyricStudio when the full-viewport studio is open
             if (typeof LyricStudio !== 'undefined' && LyricStudio.isOpen) {
-                if (LyricStudio.isTapToSync) {
-                    if (e.code === 'Space') {
-                        e.preventDefault();
-                        LyricStudio.stampCurrentLine();
-                        return;
-                    }
-                    if (e.key === 'Backspace' && !isInput) {
-                        e.preventDefault();
-                        LyricStudio.undoLastStamp();
-                        return;
-                    }
+                if (typeof LyricStudio.handleKeyDown === 'function' && LyricStudio.handleKeyDown(e)) {
+                    return;
+                }
+                if (e.key === 'Escape' && !isInput) {
+                    LyricStudio.close();
+                    e.preventDefault();
+                    return;
                 }
             }
 
@@ -133,6 +143,12 @@ const ShortcutsManager = {
                     ShortcutsManager.toggleCheatSheet();
                     return;
                 }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (typeof LyricStudio !== 'undefined' && LyricStudio.isOpen && typeof LyricStudio.handleKeyUp === 'function') {
+                LyricStudio.handleKeyUp(e);
             }
         });
     },

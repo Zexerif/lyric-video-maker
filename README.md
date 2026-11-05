@@ -1,4 +1,4 @@
-# 🎵 Lyric Video Maker (v2.0.1)
+# 🎵 Lyric Video Maker (v2.1.0)
 
 > Create gorgeous synced lyric videos from your audio and lyrics files directly in your browser.
 
@@ -8,7 +8,7 @@
 
 ---
 
-## 🎉 What's New in v2.0.1
+## 🎉 What's New in v2.1.0
 
 - 📄 **Advanced SubStation Alpha (.ass / .ssa) Support**:
   - Full support for `.ass` and `.ssa` subtitle files.

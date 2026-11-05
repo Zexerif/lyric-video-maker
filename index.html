@@ -11,7 +11,7 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&family=Lexend:wght@400;600;800&family=Bebas+Neue&family=Montserrat:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@700&family=Permanent+Marker&family=Pacifico&family=Comic+Neue:wght@400;700&family=Noto+Sans+JP:wght@400;700;900&family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/index.css">
-    <link rel="stylesheet" href="styles.css?v=2.0.1">
+    <link rel="stylesheet" href="styles.css?v=2.1.0">
 </head>
 
 <body>
@@ -45,7 +45,7 @@
                     <span class="badge-star">★</span>
                 </a>
             </div>
-            <h1>Lyric Video Maker <button type="button" id="whatsNewBtn" class="version-badge" title="What's New in v2.0.1">v2.0.1</button></h1>
+            <h1>Lyric Video Maker <button type="button" id="whatsNewBtn" class="version-badge" title="What's New in v2.1.0">v2.1.0</button></h1>
             <p>Create simple lyric videos from your audio and lyrics files.</p>
         </header>
 
@@ -362,6 +362,11 @@
                                 <label for="backingVocalsAlongside" id="backingVocalsAlongsideLabel" style="margin: 0; font-size: 0.8rem; color: var(--text-muted); cursor: pointer; user-select: none;">Play alongside main vocal when overlapping</label>
                             </div>
                             <div id="backingVocalsAlongsideHint" style="font-size: 0.72rem; color: var(--text-muted); opacity: 0.8; margin-top: 0.15rem; line-height: 1.3;">When backing vocals happen during a main vocal line, displays them together instead of skipping ahead.</div>
+                            <div style="margin-top: 0.5rem;">
+                                <button type="button" id="mainAutoBracketBgBtn" class="btn small secondary" style="width: 100%; font-size: 0.76rem; padding: 0.35rem 0.6rem; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;" title="Scan loaded lyrics and move words/lines in brackets to backing vocal space">
+                                    <span>🎤</span> Auto-Put (Brackets) in Backing Space
+                                </button>
+                            </div>
                         </div>
 
                         <div class="input-group">
@@ -429,7 +434,10 @@
 
                     <!-- Lyric Editor Textarea -->
                     <div class="input-group" style="height: 100%; margin-top: 0.25rem;">
-                        <label for="lrcEditor">Lyric Editor (Live Edit)</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <label for="lrcEditor" style="margin: 0;">Lyric Editor (Live Edit)</label>
+                            <span id="lrcEditorPositionBadge" style="font-size: 0.72rem; font-family: 'SF Mono', 'Fira Code', monospace; color: #a5b4fc; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); padding: 0.12rem 0.55rem; border-radius: 999px;">Line: -- | Word: --</span>
+                        </div>
                         <textarea id="lrcEditor" placeholder="Upload an .lrc/.ttml/.ass file or type lyrics here..."
                             style="min-height: 220px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem; line-height: 1.5;"></textarea>
                     </div>
@@ -486,7 +494,10 @@
                         </div>
                     </div>
 
-                    <button id="exportBtn" class="btn secondary" disabled>Generate & Download Video</button>
+                    <div style="display: flex; gap: 0.6rem; width: 100%; align-items: stretch;">
+                        <button id="exportBtn" class="btn secondary" disabled style="flex: 1;">Generate & Download Video</button>
+                        <button type="button" id="openThumbnailBtn" class="btn small" style="width: auto; padding: 0 1.1rem; font-size: 0.88rem; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;" title="Open Thumbnail Generator">🖼️ Thumbnail</button>
+                    </div>
                 </div>
 
                 <div class="progress-container" id="progressContainer" style="display: none;">
@@ -636,81 +647,551 @@
                 <p class="github-link" style="margin: 0;"><a href="https://github.com/Zexerif/lyric-video-maker" target="_blank"
                         rel="noopener">View on GitHub</a></p>
             </div>
-            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v2.0.1
+            <p class="version-number" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">v2.1.0
             </p>
         </footer>
     </div>
 
-    <!-- Lyric Editor Studio Modal -->
-    <div id="lyricStudioModal" class="modal-overlay">
-        <div class="modal-content glass-panel studio-modal-content">
-            <div class="studio-header">
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <span style="font-size: 1.6rem;">🎵</span>
-                    <div>
-                        <h2 style="margin: 0; font-size: 1.3rem; display: inline-block;">Lyric Studio</h2>
-                        <div id="studioTrackTitle" style="font-size: 0.82rem; color: var(--text-muted); font-weight: 500;">Untitled Track</div>
+    <!-- Dedicated Full-Viewport Lyric Studio Workspace -->
+    <div id="lyricStudioModal" class="modal-overlay lyric-studio-viewport hidden">
+        <div class="studio-modal-content lyric-studio-shell">
+            <!-- 1. Top Studio Header -->
+            <header class="studio-header">
+                <div class="studio-header-left">
+                    <button type="button" id="closeLyricStudioBtn" class="studio-back-btn" title="Discard unapplied edits and return to Video Maker (Esc)">
+                        <span>←</span>
+                        <span>Back to Video Maker</span>
+                    </button>
+                    <div class="studio-brand-divider"></div>
+                    <div class="studio-title-group">
+                        <div class="studio-title-row">
+                            <span class="studio-logo-badge">🎵 Lyric Studio</span>
+                            <span id="studioLineCountBadge" class="studio-stats-pill">0 lines · 0/0 timed</span>
+                        </div>
+                        <div id="studioTrackTitle" class="studio-track-subtitle">Untitled Track</div>
                     </div>
                 </div>
 
-                <div class="studio-transport">
-                    <button type="button" id="studioRewindBtn" class="icon-btn" title="Rewind 5s">⏪</button>
-                    <button type="button" id="studioPlayPauseBtn" class="btn small primary" style="width: auto; padding: 0.4rem 1rem; margin: 0; border-radius: 8px; font-size: 0.82rem;">▶ Play</button>
-                    <button type="button" id="studioForwardBtn" class="icon-btn" title="Forward 5s">⏩</button>
-                    <span id="studioTimeDisplay" style="font-family: monospace; font-size: 0.85rem; font-weight: 700; color: #38bdf8; margin-left: 0.5rem;">0:00.0 / 0:00.0</span>
-                </div>
+                <!-- Mode Switcher Tabs -->
+                <nav class="studio-mode-tabs" aria-label="Lyric Studio Modes">
+                    <button type="button" id="studioTabEdit" class="studio-mode-tab active" data-studio-mode="edit" title="Edit Mode: Text, Word Tokens & Syllable Splitting (Alt+1)">
+                        <span class="mode-tab-icon">✍️</span>
+                        <span class="mode-tab-label">Edit Mode</span>
+                        <span class="mode-tab-sub">Text &amp; Tokens</span>
+                    </button>
+                    <button type="button" id="studioTabSync" class="studio-mode-tab" data-studio-mode="sync" title="Sync Mode: AMLL-Style Rapid Keyboard Timing (Alt+2)">
+                        <span class="mode-tab-icon">⚡</span>
+                        <span class="mode-tab-label">Sync Mode</span>
+                        <span class="mode-tab-sub">Keyboard Timing</span>
+                    </button>
+                    <button type="button" id="studioTabPreview" class="studio-mode-tab" data-studio-mode="preview" title="Preview Mode: Live Apple Music & Video Canvas Verification (Alt+3)">
+                        <span class="mode-tab-icon">👁️</span>
+                        <span class="mode-tab-label">Preview Mode</span>
+                        <span class="mode-tab-sub">Live Verification</span>
+                    </button>
+                </nav>
 
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <button type="button" id="studioTapSyncBtn" class="btn small" style="width: auto; padding: 0.45rem 1rem; margin: 0; border-radius: 8px; background: rgba(236, 72, 153, 0.15); border: 1px solid #ec4899; color: #f472b6; font-size: 0.82rem; font-weight: 600;">🔴 Tap-to-Sync Mode</button>
-                    <button type="button" id="studioUndoBtn" class="action-undo-btn icon-btn" title="Undo (Ctrl+Z)" disabled>↶</button>
-                    <button type="button" id="studioRedoBtn" class="action-redo-btn icon-btn" title="Redo (Ctrl+Y)" disabled>↷</button>
-                    <button type="button" id="saveLyricStudioBtn" class="btn small primary" style="width: auto; padding: 0.45rem 1.2rem; margin: 0; border-radius: 8px; font-size: 0.82rem; font-weight: 600;">✓ Apply Changes</button>
-                    <button type="button" id="closeLyricStudioBtn" class="icon-btn" title="Close Studio">✕</button>
-                </div>
-            </div>
+                <!-- Studio Tools & Save/Apply -->
+                <div class="studio-header-right">
+                    <!-- Hidden compatibility button for legacy Tap-to-Sync triggers -->
+                    <button type="button" id="studioTapSyncBtn" class="studio-tool-btn hidden" title="Toggle Sync Mode">🔴 Sync</button>
 
-            <!-- Tap-to-Sync Guidance Banner -->
-            <div id="studioTapSyncBanner" style="display: none; background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.4); border-radius: 12px; padding: 0.75rem 1rem; align-items: center; justify-content: space-between; gap: 1rem;">
-                <div style="font-size: 0.85rem; color: #fdf2f8;">
-                    <strong>🔴 Tap-to-Sync Active:</strong> Play the music and press <span class="shortcut-key">SPACEBAR</span> or <strong>[📍 Stamp]</strong> on each line as it is sung! Press <span class="shortcut-key">Backspace</span> to undo.
-                </div>
-                <div id="studioTapPrompt" style="font-size: 0.88rem; font-weight: 700; color: #f472b6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%;">Next: "..."</div>
-            </div>
+                    <button type="button" id="studioBatchPasteBtn" class="studio-tool-btn" title="Paste raw multiline lyrics and batch split into lines & words">
+                        📋 Batch Paste
+                    </button>
+                    <button type="button" id="studioImportExportBtn" class="studio-tool-btn" title="Import or Export Lyrics (.ttml, Enhanced .lrc, .json, Raw text)">
+                        ⇄ Import / Export
+                    </button>
 
-            <!-- Main Studio Workspace (Lines List + Mini Preview) -->
-            <div style="display: flex; gap: 1rem; flex: 1; min-height: 0; overflow: hidden;">
-                <div class="studio-lines-container" id="studioLinesList">
-                    <!-- Dynamic Lyric Cards rendered by LyricStudio -->
-                </div>
-
-                <div style="width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.75rem;">
-                    <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Live Preview</div>
-                    <div style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-                        <canvas id="studioMiniCanvas" width="320" height="180" style="width: 100%; height: 100%; object-fit: contain;"></canvas>
+                    <div class="studio-undo-group">
+                        <button type="button" id="studioUndoBtn" class="studio-icon-btn" title="Undo in Studio (Ctrl+Z)" disabled>↶</button>
+                        <button type="button" id="studioRedoBtn" class="studio-icon-btn" title="Redo in Studio (Ctrl+Y)" disabled>↷</button>
                     </div>
-                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.75rem; font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
-                        <strong style="color: #fff;">💡 Quick Tips:</strong><br>
-                        • Drag cue markers on the timeline below to align timing.<br>
-                        • Click any line's <strong>▶</strong> to test playback from that exact second.<br>
-                        • Add secondary language/furigana in the sub-lyric field.
+
+                    <div class="studio-popover-anchor">
+                        <button type="button" id="studioShortcutsBtn" class="studio-icon-btn" title="Studio Keyboard Shortcuts (?)">⌨️</button>
+                        <!-- Studio Keyboard Shortcuts Popover -->
+                        <div id="studioShortcutsPopover" class="studio-popover hidden">
+                            <div class="studio-popover-header">
+                                <strong>⌨️ Lyric Studio Shortcuts</strong>
+                                <button type="button" id="closeStudioShortcutsPopover" class="studio-mini-close">✕</button>
+                            </div>
+                            <div class="studio-shortcuts-list">
+                                <div class="shortcut-group-label">Sync Mode (AMLL F / G / H Workflow)</div>
+                                <div class="shortcut-item"><kbd>Space</kbd><span>Play / Pause Audio (Never stamps)</span></div>
+                                <div class="shortcut-item"><kbd>F</kbd><span>Set Start Time of current word/line (press again if early)</span></div>
+                                <div class="shortcut-item"><kbd>G</kbd><span>End current word + Advance + Start next word</span></div>
+                                <div class="shortcut-item"><kbd>H</kbd><span>End current word/line + Advance &amp; leave gap</span></div>
+                                <div class="shortcut-item"><kbd>R</kbd><span>Retry current line (rewinds to 0:00 / pre-roll)</span></div>
+                                <div class="shortcut-item"><kbd>Backspace</kbd><span>Step back 1 word &amp; clear timestamp</span></div>
+                                <div class="shortcut-item"><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd><span>Move Sync Cursor (Lines / Words)</span></div>
+                                <div class="shortcut-item"><kbd>[</kbd> <kbd>]</kbd> or <kbd>-</kbd> <kbd>=</kbd><span>Nudge timestamp -50ms / +50ms</span></div>
+                                <div class="shortcut-group-label">Global Studio Controls</div>
+                                <div class="shortcut-item"><kbd>Alt+1</kbd> <kbd>2</kbd> <kbd>3</kbd><span>Switch Edit / Sync / Preview Mode</span></div>
+                                <div class="shortcut-item"><kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd><span>Undo / Redo studio action</span></div>
+                                <div class="shortcut-item"><kbd>Ctrl+S</kbd><span>Apply Lyrics &amp; Return to Video Studio</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" id="saveLyricStudioBtn" class="studio-apply-btn" title="Apply synced lyrics and return to Video Studio (Ctrl+S)">
+                        ✓ Save &amp; Apply Lyrics
+                    </button>
+                </div>
+            </header>
+
+            <!-- 2. Main Studio Workspace + Right Inspector Sidebar -->
+            <div class="studio-body-grid">
+                <!-- Dynamic Main Workspace -->
+                <main class="studio-main-stage">
+                    <!-- A. EDIT MODE WORKSPACE -->
+                    <section id="studioEditWorkspace" class="studio-mode-workspace">
+                        <div class="studio-subtoolbar">
+                            <div class="studio-subtoolbar-left">
+                                <button type="button" id="studioOpenBatchFromEditBtn" class="studio-pill-btn accent">📋 Batch Paste &amp; Split</button>
+                                <div class="studio-toolbar-divider"></div>
+                                <div class="studio-btn-group">
+                                    <button type="button" id="studioAddLineTopBtn" class="studio-pill-btn" title="Insert new line at top">+ Top Line</button>
+                                    <button type="button" id="studioAddLineBottomBtn" class="studio-pill-btn" title="Add new line at bottom">+ Bottom Line</button>
+                                </div>
+                                <div class="studio-toolbar-divider"></div>
+                                <div class="studio-btn-group">
+                                    <button type="button" id="studioAutoTokenizeAllBtn" class="studio-pill-btn" title="Auto-split selected line's words into syllables">🔤 Syllabify Line</button>
+                                    <button type="button" id="studioAutoSyllabifyAllBtn" class="studio-pill-btn" title="Automatically split all English/CJK words into syllables for karaoke">✨ Syllabify All</button>
+                                    <button type="button" id="studioEditDistributeBtn" class="studio-pill-btn" title="Evenly distribute word timings across selected line duration">⏱️ Spread Word Times</button>
+                                    <button type="button" id="studioAutoFitEndsBtn" class="studio-pill-btn" title="Automatically fit line end times to eliminate overlaps and fill gaps">🪄 Auto-Fit Ends</button>
+                                    <button type="button" id="studioAutoBracketBgBtn" class="studio-pill-btn" title="Automatically put items in (brackets) into backing vocals space">🪄 ( ) → BG Space</button>
+                                </div>
+                            </div>
+                            <div class="studio-subtoolbar-right">
+                                <div class="studio-btn-group" title="Global timestamp offset shift across all lines">
+                                    <span class="toolbar-mini-label">Offset All:</span>
+                                    <button type="button" id="studioEditShiftBackBtn" class="studio-pill-btn mono">-100ms</button>
+                                    <button type="button" id="studioEditShiftFwdBtn" class="studio-pill-btn mono">+100ms</button>
+                                </div>
+                                <button type="button" id="studioEditSortBtn" class="studio-pill-btn" title="Sort all lines chronologically by start time">↕️ Sort</button>
+                                <button type="button" id="studioClearAllTimingsBtn" class="studio-pill-btn danger-subtle" title="Reset all line and word timestamps">🧹 Clear Timings</button>
+                            </div>
+                        </div>
+                        <div class="studio-lines-container" id="studioLinesList">
+                            <!-- Populated by LyricStudioEditMode -->
+                        </div>
+                    </section>
+
+                    <!-- B. SYNC MODE WORKSPACE (AMLL-Style Keyboard Timing) -->
+                    <section id="studioSyncWorkspace" class="studio-mode-workspace hidden">
+                        <div class="studio-sync-toolbar">
+                            <div class="studio-sync-granularity">
+                                <span class="toolbar-label">Mode:</span>
+                                <div class="studio-segmented-control">
+                                    <button type="button" class="studio-sync-gran-btn active" data-sync-gran="word">🔤 Word / Syllable (AMLL)</button>
+                                    <button type="button" class="studio-sync-gran-btn" data-sync-gran="line">☰ Line-by-Line</button>
+                                </div>
+                                <div class="studio-latency-box" title="Human reaction time compensation applied when stamping during playback">
+                                    <span class="toolbar-mini-label">Latency:</span>
+                                    <select id="studioSyncLatencySelect" class="studio-compact-select">
+                                        <option value="0">0ms</option>
+                                        <option value="-0.03">-30ms</option>
+                                        <option value="-0.05" selected>-50ms (AMLL)</option>
+                                        <option value="-0.08">-80ms</option>
+                                        <option value="-0.12">-120ms</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="studioTapSyncBanner" class="studio-sync-prompt-banner">
+                                <span class="sync-banner-keys">
+                                    <kbd>Space</kbd> Play/Pause · <kbd>F</kbd> Start Word · <kbd>G</kbd> End &amp; Start Next · <kbd>H</kbd> End &amp; Gap · <kbd>R</kbd> Retry Line · <kbd>⌫</kbd> Back
+                                </span>
+                                <span id="studioTapPrompt" class="sync-banner-target">Target: —</span>
+                            </div>
+
+                            <div class="studio-sync-actions">
+                                <button type="button" id="studioSyncPlayFromZeroBtn" class="studio-pill-btn" title="Rewind audio to 00:00.000 without losing selected line/word (Home)">
+                                    ⏮ 0:00
+                                </button>
+                                <button type="button" id="studioSyncPrimaryStampBtn" class="studio-pill-btn amll-key-btn key-f-btn" title="[F] Set Start Time of current word/line (stays on current item; press F again if early!)">
+                                    <kbd>F</kbd> Set Start
+                                </button>
+                                <button type="button" id="studioSyncNextCutBtn" class="studio-pill-btn amll-key-btn key-g-btn primary-pulse" title="[G] End current word, immediately advance to next word &amp; set its Start Time">
+                                    <kbd>G</kbd> Next Word
+                                </button>
+                                <button type="button" id="studioSyncEndStampBtn" class="studio-pill-btn amll-key-btn key-h-btn" title="[H] End current word/line, advance to next word &amp; leave a silence/gap until next [F]">
+                                    <kbd>H</kbd> End &amp; Gap
+                                </button>
+                                <button type="button" id="studioSyncRetryLineBtn" class="studio-pill-btn" title="[R] Retry current line from Word #1 and rewind to 0:00 (for Line #1) or pre-roll">
+                                    <kbd>R</kbd> Retry Line
+                                </button>
+                                <button type="button" id="studioSyncStepBackBtn" class="studio-pill-btn" title="Step back 1 word &amp; clear timestamp (Backspace)">
+                                    ⌫ Back
+                                </button>
+                                <button type="button" id="studioSyncResetFromCursorBtn" class="studio-pill-btn danger-subtle" title="Move sync cursor back to Line #1, Word #1">
+                                    ⏮ Line #1
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="studio-sync-stage" id="studioSyncList">
+                            <!-- Populated by LyricStudioSyncMode -->
+                        </div>
+                    </section>
+
+                    <!-- C. PREVIEW MODE WORKSPACE (Apple Music + Live Video Canvas) -->
+                    <section id="studioPreviewWorkspace" class="studio-mode-workspace hidden">
+                        <div class="studio-subtoolbar">
+                            <div class="studio-subtoolbar-left">
+                                <span class="toolbar-label">View:</span>
+                                <div class="studio-segmented-control">
+                                    <button type="button" class="studio-preview-layout-btn active" data-preview-layout="split">🌗 Split Studio View</button>
+                                    <button type="button" class="studio-preview-layout-btn" data-preview-layout="apple">🍎 Apple Music Karaoke</button>
+                                    <button type="button" class="studio-preview-layout-btn" data-preview-layout="canvas">🎬 Video Canvas</button>
+                                </div>
+                            </div>
+                            <div class="studio-subtoolbar-right">
+                                <label class="studio-check-pill">
+                                    <input type="checkbox" id="studioPreviewTransToggle" checked>
+                                    <span>🌐 Translations</span>
+                                </label>
+                                <label class="studio-check-pill">
+                                    <input type="checkbox" id="studioPreviewRomanToggle" checked>
+                                    <span>🔤 Romanization</span>
+                                </label>
+                                <label class="studio-check-pill">
+                                    <input type="checkbox" id="studioPreviewBgToggle" checked>
+                                    <span>🎤 Backing Vocals</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="studioPreviewBody" class="studio-preview-body layout-split">
+                            <div id="studioApplePreviewPane" class="studio-apple-preview-pane">
+                                <div class="studio-amll-header-bar">
+                                    <div id="studioAmllArtwork" class="studio-amll-art">🎵</div>
+                                    <div class="studio-amll-meta">
+                                        <div id="studioAmllTitle" class="studio-amll-title">Untitled Track</div>
+                                        <div id="studioAmllArtist" class="studio-amll-artist">Unknown Artist</div>
+                                    </div>
+                                    <span class="studio-amll-hint">Click any line to seek</span>
+                                </div>
+                                <div id="studioAppleScrollContainer" class="studio-apple-scroll">
+                                    <!-- Populated by LyricStudioPreviewMode -->
+                                </div>
+                            </div>
+                            <div id="studioCanvasPreviewPane" class="studio-canvas-preview-pane">
+                                <div class="studio-canvas-frame-wrap">
+                                    <canvas id="studioFullPreviewCanvas" width="960" height="540"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+
+                <!-- Right Context-Sensitive Inspector Sidebar -->
+                <aside class="studio-inspector-sidebar" id="studioInspectorSidebar">
+                    <!-- Mini Live Canvas Monitor -->
+                    <div class="inspector-card inspector-monitor-card">
+                        <div class="inspector-section-header">
+                            <span>🎬 Live Video Output</span>
+                            <span class="inspector-subtle-tag">Real-Time</span>
+                        </div>
+                        <div class="inspector-mini-canvas-wrap">
+                            <canvas id="studioMiniCanvas" width="320" height="180"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="studioInspectorEmpty" class="inspector-empty-state hidden">
+                        Select or add a lyric line to inspect its timing, vocal roles, translations, and syllable tokens.
+                    </div>
+
+                    <div id="studioInspectorContent" class="inspector-scroll-content">
+                        <!-- Line Properties Card -->
+                        <div class="inspector-card">
+                            <div class="inspector-section-header">
+                                <span>☰ Line Properties</span>
+                                <span id="inspLineBadge" class="inspector-badge">Line #1</span>
+                            </div>
+
+                            <div class="inspector-field">
+                                <label for="inspLineText">Line Text</label>
+                                <input type="text" id="inspLineText" class="inspector-input" placeholder="Enter lyric line...">
+                            </div>
+
+                            <div class="inspector-time-grid">
+                                <div class="inspector-field">
+                                    <label for="inspLineStart">Start (MM:SS.mmm)</label>
+                                    <div class="inspector-time-row">
+                                        <input type="text" id="inspLineStart" class="inspector-input mono" placeholder="00:00.000">
+                                        <button type="button" id="inspStampLineStartBtn" class="inspector-mini-btn" title="Stamp current playhead as Start">📍</button>
+                                    </div>
+                                    <div class="inspector-nudge-strip">
+                                        <button type="button" class="insp-nudge-btn" data-target="line-start" data-delta="-0.05">-50ms</button>
+                                        <button type="button" class="insp-nudge-btn" data-target="line-start" data-delta="0.05">+50ms</button>
+                                    </div>
+                                </div>
+
+                                <div class="inspector-field">
+                                    <label for="inspLineEnd">End (MM:SS.mmm)</label>
+                                    <div class="inspector-time-row">
+                                        <input type="text" id="inspLineEnd" class="inspector-input mono" placeholder="00:00.000">
+                                        <button type="button" id="inspStampLineEndBtn" class="inspector-mini-btn" title="Stamp current playhead as End">🏁</button>
+                                    </div>
+                                    <div class="inspector-nudge-strip">
+                                        <button type="button" class="insp-nudge-btn" data-target="line-end" data-delta="-0.05">-50ms</button>
+                                        <button type="button" class="insp-nudge-btn" data-target="line-end" data-delta="0.05">+50ms</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Vocal Role Toggles -->
+                            <div class="inspector-toggles-row">
+                                <label class="inspector-toggle-chip" title="Mark as Background Vocal (Apple Music tuck-in & 73% scale)">
+                                    <input type="checkbox" id="inspIsBG">
+                                    <span>🎤 Background Vocal (BG)</span>
+                                </label>
+                                <label class="inspector-toggle-chip" title="Mark as Secondary / Duet Singer (Right-aligned in AMLL/Apple Music)">
+                                    <input type="checkbox" id="inspIsDuet">
+                                    <span>👥 Duet / Singer 2</span>
+                                </label>
+                            </div>
+
+                            <!-- Translation & Romanization -->
+                            <div class="inspector-field">
+                                <label for="inspTranslation">🌐 Translation / Sub-Lyric</label>
+                                <input type="text" id="inspTranslation" class="inspector-input" placeholder="English or secondary translation...">
+                            </div>
+                            <div class="inspector-field">
+                                <label for="inspRomanization">🔤 Romanization / Pronunciation</label>
+                                <input type="text" id="inspRomanization" class="inspector-input" placeholder="Romaji / Pinyin / Phonetics...">
+                            </div>
+
+                            <!-- Line Quick Operations -->
+                            <div class="inspector-actions-grid">
+                                <button type="button" id="inspDistributeWordsBtn" class="inspector-action-btn" title="Evenly distribute word timings across line duration">⏱️ Spread Words</button>
+                                <button type="button" id="inspDuplicateLineBtn" class="inspector-action-btn" title="Duplicate line">⧉ Duplicate</button>
+                                <button type="button" id="inspInsertAboveBtn" class="inspector-action-btn" title="Insert empty line above">↑ Insert Above</button>
+                                <button type="button" id="inspInsertBelowBtn" class="inspector-action-btn" title="Insert empty line below">↓ Insert Below</button>
+                                <button type="button" id="inspDeleteLineBtn" class="inspector-action-btn danger" title="Delete selected line">🗑️ Delete Line</button>
+                            </div>
+                        </div>
+
+                        <!-- Word / Syllable Token Properties Card -->
+                        <div class="inspector-card" id="inspWordSection">
+                            <div class="inspector-section-header">
+                                <span>🔤 Word / Syllable Token</span>
+                                <span id="inspWordBadge" class="inspector-badge accent">Token #1</span>
+                            </div>
+
+                            <div id="inspWordTokenStrip" class="inspector-token-strip">
+                                <!-- Populated by LyricStudioInspector -->
+                            </div>
+
+                            <div class="inspector-field">
+                                <label for="inspWordText">Token Text</label>
+                                <div class="inspector-time-row">
+                                    <input type="text" id="inspWordText" class="inspector-input" placeholder="Word or syllable...">
+                                    <label class="inspector-space-check" title="Include space after this syllable/word">
+                                        <input type="checkbox" id="inspWordTrailingSpace" checked>
+                                        <span>␣ Space</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="inspector-time-grid">
+                                <div class="inspector-field">
+                                    <label for="inspWordStart">Token Start</label>
+                                    <div class="inspector-time-row">
+                                        <input type="text" id="inspWordStart" class="inspector-input mono" placeholder="00:00.000">
+                                        <button type="button" id="inspStampWordStartBtn" class="inspector-mini-btn" title="Stamp token start">📍</button>
+                                    </div>
+                                    <div class="inspector-nudge-strip">
+                                        <button type="button" class="insp-word-nudge-btn" data-target="word-start" data-delta="-0.05">-50ms</button>
+                                        <button type="button" class="insp-word-nudge-btn" data-target="word-start" data-delta="0.05">+50ms</button>
+                                    </div>
+                                </div>
+                                <div class="inspector-field">
+                                    <label for="inspWordEnd">Token End</label>
+                                    <div class="inspector-time-row">
+                                        <input type="text" id="inspWordEnd" class="inspector-input mono" placeholder="00:00.000">
+                                        <button type="button" id="inspStampWordEndBtn" class="inspector-mini-btn" title="Stamp token end">🏁</button>
+                                    </div>
+                                    <div class="inspector-nudge-strip">
+                                        <button type="button" class="insp-word-nudge-btn" data-target="word-end" data-delta="-0.05">-50ms</button>
+                                        <button type="button" class="insp-word-nudge-btn" data-target="word-end" data-delta="0.05">+50ms</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="inspector-field">
+                                <label for="inspSyllableInput">Split into Syllables (Hyphen/Space)</label>
+                                <div class="inspector-time-row">
+                                    <input type="text" id="inspSyllableInput" class="inspector-input" placeholder="e.g. for-ev-er">
+                                    <button type="button" id="inspApplySyllableSplitBtn" class="inspector-mini-btn accent">Split</button>
+                                </div>
+                            </div>
+
+                            <div class="inspector-actions-grid">
+                                <button type="button" id="inspAutoSyllabifyBtn" class="inspector-action-btn">✨ Auto-Syllabify</button>
+                                <button type="button" id="inspMergePrevWordBtn" class="inspector-action-btn">⬅ Merge Prev</button>
+                                <button type="button" id="inspMergeNextWordBtn" class="inspector-action-btn">Merge Next ➡</button>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            <!-- 3. Bottom Persistent Audio & Timeline Dock -->
+            <footer class="studio-audio-dock">
+                <div class="studio-dock-controls">
+                    <!-- Playback Transport -->
+                    <div class="studio-transport-group">
+                        <button type="button" id="studioRestartZeroBtn" class="studio-dock-btn" title="Restart from 00:00.000 (Home)">⏮ 0:00</button>
+                        <button type="button" id="studioRewindBtn" class="studio-dock-btn" title="Seek -5s">-5s</button>
+                        <button type="button" id="studioSeekBack1Btn" class="studio-dock-btn" title="Seek -1s">-1s</button>
+                        <button type="button" id="studioPlayPauseBtn" class="studio-play-btn" title="Play / Pause Audio (Space)">▶</button>
+                        <button type="button" id="studioSeekFwd1Btn" class="studio-dock-btn" title="Seek +1s">+1s</button>
+                        <button type="button" id="studioForwardBtn" class="studio-dock-btn" title="Seek +5s (Right Arrow)">+5s</button>
+                        <div id="studioTimeDisplay" class="studio-time-readout">00:00.000 / 00:00.000</div>
+                        <div id="studioCurrentPositionBadge" class="studio-position-badge" title="Current playing line and word token">Line: -- | Word: --</div>
+                    </div>
+
+                    <!-- Playback Speed Selector -->
+                    <div class="studio-speed-group">
+                        <span class="dock-label">Speed:</span>
+                        <button type="button" class="studio-speed-pill" data-speed="0.5">0.5x</button>
+                        <button type="button" class="studio-speed-pill" data-speed="0.75">0.75x</button>
+                        <button type="button" class="studio-speed-pill active" data-speed="1">1.0x</button>
+                        <button type="button" class="studio-speed-pill" data-speed="1.25">1.25x</button>
+                        <select id="studioSpeedSelect" class="studio-speed-select" aria-label="Playback Speed">
+                            <option value="0.5">0.5x</option>
+                            <option value="0.75">0.75x</option>
+                            <option value="1" selected>1.0x</option>
+                            <option value="1.25">1.25x</option>
+                            <option value="1.5">1.5x</option>
+                        </select>
+                    </div>
+
+                    <!-- Volume Slider -->
+                    <div class="studio-volume-group">
+                        <button type="button" id="studioMuteBtn" class="studio-dock-icon-btn" title="Mute / Unmute">🔊</button>
+                        <input type="range" id="studioVolumeSlider" class="studio-range-slider" min="0" max="1" step="0.01" value="1" aria-label="Studio Volume">
+                    </div>
+
+                    <!-- Timeline Zoom Controls -->
+                    <div class="studio-zoom-group">
+                        <button type="button" id="studioBeatGridBtn" class="studio-dock-btn active" title="Toggle BPM Beat Grid overlay on waveform">🥁 Beat Grid</button>
+                        <button type="button" id="studioFollowPlayheadBtn" class="studio-dock-btn active" title="Auto-scroll timeline with playhead">🎯 Follow</button>
+                        <span class="dock-label">Zoom:</span>
+                        <button type="button" id="studioZoomOutBtn" class="studio-dock-icon-btn" title="Zoom Out">−</button>
+                        <input type="range" id="studioZoomSlider" class="studio-range-slider" min="1" max="20" step="0.5" value="1" aria-label="Timeline Zoom">
+                        <button type="button" id="studioZoomInBtn" class="studio-dock-icon-btn" title="Zoom In">+</button>
+                        <span id="studioZoomValue" class="studio-zoom-badge">1.0x</span>
+                        <button type="button" id="studioZoomResetBtn" class="studio-dock-btn" title="Reset Zoom to 1x">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Interactive Waveform & Lyric Block Timeline Scrubber -->
+                <div id="studioTimelineContainer" class="studio-timeline-container">
+                    <canvas id="studioTimelineCanvas"></canvas>
+                </div>
+            </footer>
+
+            <!-- Sub-Modal 1: Raw Paste / Batch Split Modal -->
+            <div id="studioBatchPasteModal" class="studio-submodal-backdrop hidden">
+                <div class="studio-submodal-card">
+                    <div class="studio-submodal-header">
+                        <h3>📋 Raw Paste &amp; Batch Split Lyrics</h3>
+                        <button type="button" id="closeStudioBatchPasteBtn" class="studio-mini-close">✕</button>
+                    </div>
+                    <p class="studio-submodal-desc">
+                        Paste plain multiline lyrics (or LRC/timestamped lines). Each line will automatically split into interactive word tokens. Use <code>//</code> for translations and <code>///</code> for romanization.
+                    </p>
+                    <textarea id="studioBatchPasteInput" class="studio-submodal-textarea" rows="10" placeholder="Paste your lyrics here...&#10;Line one words here // Translation here&#10;[bg] (Backing vocal line)"></textarea>
+                    <div class="studio-submodal-options">
+                        <label class="inspector-toggle-chip">
+                            <input type="checkbox" id="studioBatchParseTimestamps" checked>
+                            <span>Parse existing [mm:ss.xx] timestamps if present</span>
+                        </label>
+                        <label class="inspector-toggle-chip">
+                            <input type="checkbox" id="studioBatchAutoSyllable">
+                            <span>Auto-split English words into syllables</span>
+                        </label>
+                        <label class="inspector-toggle-chip">
+                            <input type="checkbox" id="studioBatchBracketBg" checked>
+                            <span>Auto-mark (brackets) as Backing Vocals</span>
+                        </label>
+                    </div>
+                    <div class="studio-submodal-actions">
+                        <button type="button" id="cancelStudioBatchPasteBtn" class="studio-pill-btn">Cancel</button>
+                        <button type="button" id="studioBatchAppendBtn" class="studio-pill-btn">➕ Append to Existing</button>
+                        <button type="button" id="studioBatchReplaceBtn" class="studio-apply-btn">⚡ Replace All Lines</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Studio Timeline Container -->
-            <div style="height: 100px; flex-shrink: 0; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--glass-border); border-radius: 14px; position: relative; overflow: hidden;" id="studioTimelineContainer">
-                <canvas id="studioTimelineCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair;"></canvas>
+            <!-- Sub-Modal 2: Import / Export Lyrics Modal -->
+            <div id="studioImportExportModal" class="studio-submodal-backdrop hidden">
+                <div class="studio-submodal-card">
+                    <div class="studio-submodal-header">
+                        <div class="studio-io-tabs">
+                            <button type="button" class="studio-io-tab active" data-io-tab="export">📤 Export Lyrics</button>
+                            <button type="button" class="studio-io-tab" data-io-tab="import">📥 Import File / Text</button>
+                        </div>
+                        <button type="button" id="closeStudioImportExportBtn" class="studio-mini-close">✕</button>
+                    </div>
+
+                    <!-- Export Panel -->
+                    <div id="studioExportPanel" class="studio-io-panel">
+                        <div class="studio-format-selector">
+                            <button type="button" class="studio-fmt-btn active" data-fmt="ttml">TTML (Apple Music / AMLL)</button>
+                            <button type="button" class="studio-fmt-btn" data-fmt="lrc-enhanced">Enhanced .LRC (Word Sync)</button>
+                            <button type="button" class="studio-fmt-btn" data-fmt="lrc">Standard .LRC</button>
+                            <button type="button" class="studio-fmt-btn" data-fmt="json">Studio .JSON</button>
+                            <button type="button" class="studio-fmt-btn" data-fmt="raw">Plain Text</button>
+                        </div>
+                        <div class="studio-submodal-options">
+                            <label class="inspector-toggle-chip">
+                                <input type="checkbox" id="studioExportEnhancedLrc" checked>
+                                <span>Include word-by-word inline &lt;mm:ss.xx&gt; tags</span>
+                            </label>
+                            <label class="inspector-toggle-chip">
+                                <input type="checkbox" id="studioExportMetadata" checked>
+                                <span>Include BG / Duet / Translation / Romanization</span>
+                            </label>
+                        </div>
+                        <textarea id="studioExportTextarea" class="studio-submodal-textarea mono" rows="10" readonly></textarea>
+                        <div class="studio-submodal-actions">
+                            <button type="button" id="studioCopyExportBtn" class="studio-pill-btn">📋 Copy to Clipboard</button>
+                            <button type="button" id="studioDownloadExportBtn" class="studio-apply-btn">💾 Download File</button>
+                        </div>
+                    </div>
+
+                    <!-- Import Panel -->
+                    <div id="studioImportPanel" class="studio-io-panel hidden">
+                        <div class="studio-import-file-bar">
+                            <input type="file" id="studioImportFileInput" accept=".lrc,.ttml,.xml,.json,.ass,.ssa,.txt" class="hidden">
+                            <button type="button" id="studioImportFileBtn" class="studio-pill-btn accent">📂 Choose File (.lrc, .ttml, .ass, .json, .txt)</button>
+                            <span id="studioImportFileName" class="studio-file-label">or paste content below</span>
+                        </div>
+                        <textarea id="studioImportTextarea" class="studio-submodal-textarea mono" rows="9" placeholder="Paste .lrc, Enhanced .lrc, .ttml, .ass, .json, or plain text here..."></textarea>
+                        <div class="studio-submodal-actions">
+                            <button type="button" id="studioApplyImportBtn" class="studio-apply-btn">📥 Load into Studio</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Studio Toast Notification -->
+            <div id="studioToast" class="studio-toast hidden"></div>
         </div>
     </div>
 
     <!-- Keyboard Shortcuts Cheat-Sheet Modal -->
     
-    <!-- What's New in v2.0.1 Modal -->
+    <!-- What's New in v2.1.0 Modal -->
     <div id="whatsNewModal" class="modal-overlay">
         <div class="modal-content glass-panel" style="max-width: 640px; max-height: 85vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
-                <h2 style="margin: 0; font-size: 1.4rem;">🎉 What's New in v2.0.1</h2>
+                <h2 style="margin: 0; font-size: 1.4rem;">🎉 What's New in v2.1.0</h2>
                 <button type="button" id="closeWhatsNewBtn" class="icon-btn">✕</button>
             </div>
             <div class="modal-body" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.85rem;">
@@ -925,6 +1406,128 @@
         </div>
     </div>
 
+    <!-- Post-Download Thumbnail Prompt Modal -->
+    <div id="thumbnailPromptModal" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 580px;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                <span style="font-size: 2rem;">🎉</span>
+                <div>
+                    <h2 id="thumbPromptTitle" style="margin: 0; font-size: 1.45rem;">Your Video Has Finished Downloading!</h2>
+                    <p id="thumbPromptSubtitle" style="margin: 0.25rem 0 0 0; font-size: 0.92rem; color: var(--text-muted);">Would you also like to generate a matching thumbnail for your video?</p>
+                </div>
+            </div>
+
+            <div style="margin: 1.1rem 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--glass-border); background: #0a0b12; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);">
+                <canvas id="thumbPromptPreviewCanvas" width="960" height="540" style="width: 100%; height: auto; display: block;"></canvas>
+            </div>
+
+            <div class="modal-actions" style="display: flex; gap: 0.65rem; justify-content: flex-end; flex-wrap: wrap;">
+                <button type="button" id="thumbPromptNoBtn" class="btn secondary small" style="width: auto; padding: 0.65rem 1.2rem; border-radius: 10px;">No Thanks</button>
+                <button type="button" id="thumbPromptYesBtn" class="btn small" style="width: auto; padding: 0.65rem 1.25rem; border-radius: 10px;">🎨 Customize Thumbnail...</button>
+                <button type="button" id="thumbPromptQuickDownloadBtn" class="btn primary small" style="width: auto; padding: 0.65rem 1.35rem; border-radius: 10px;">⬇️ Download Thumbnail Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Interactive Thumbnail Generator Modal -->
+    <div id="thumbnailGeneratorModal" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 960px; width: 94%; padding: 2rem !important;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem;">
+                <div>
+                    <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">🖼️ Thumbnail Studio</h2>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Create a high-resolution YouTube / social thumbnail matching your song's style &amp; artwork.</p>
+                </div>
+                <button type="button" id="closeThumbnailGenBtn" class="icon-btn" title="Close (Esc)">✕</button>
+            </div>
+
+            <div class="thumbnail-studio-grid" style="display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, 1fr); gap: 1.5rem; align-items: start;">
+                <!-- Live Preview Column -->
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div style="border-radius: 16px; overflow: hidden; border: 1px solid var(--glass-border); background: #0a0b12; box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55); position: relative;">
+                        <canvas id="thumbnailPreviewCanvas" width="1920" height="1080" style="width: 100%; height: auto; display: block;"></canvas>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: var(--text-muted); padding: 0 0.25rem;">
+                        <span>✨ Uses your current song title, artist, artwork, font, and color palette</span>
+                        <span style="font-family: monospace; color: #a5b4fc;">16:9 HD</span>
+                    </div>
+                </div>
+
+                <!-- Customization Controls Column -->
+                <div style="display: flex; flex-direction: column; gap: 0.85rem; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1.1rem;">
+                    <div class="input-group" style="gap: 0.4rem;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">Layout Template</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
+                            <button type="button" class="preset-pill active" data-thumb-layout="split" style="justify-content: center; padding: 0.45rem 0.6rem; font-size: 0.78rem;">💿 Split Art + Quote</button>
+                            <button type="button" class="preset-pill" data-thumb-layout="hero" style="justify-content: center; padding: 0.45rem 0.6rem; font-size: 0.78rem;">🌟 Centered Hero</button>
+                            <button type="button" class="preset-pill" data-thumb-layout="quote" style="justify-content: center; padding: 0.45rem 0.6rem; font-size: 0.78rem;">💬 Lyric Spotlight</button>
+                            <button type="button" class="preset-pill" data-thumb-layout="canvas" style="justify-content: center; padding: 0.45rem 0.6rem; font-size: 0.78rem;">🎬 Video Frame</button>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="gap: 0.35rem;">
+                        <label for="thumbQuoteSelect" style="font-size: 0.82rem; font-weight: 600;">Featured Lyric Quote</label>
+                        <select id="thumbQuoteSelect" style="padding: 0.5rem 0.75rem; font-size: 0.82rem; border-radius: 10px;">
+                            <option value="-1">✨ Auto-Pick Best Lyric Line</option>
+                            <option value="-2">✍️ Custom Text / Hook...</option>
+                            <option value="-3">🚫 Hide Lyric Quote (Title &amp; Art Only)</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group" id="thumbCustomQuoteGroup" style="display: none; gap: 0.35rem;">
+                        <label for="thumbCustomQuoteInput" style="font-size: 0.8rem; font-weight: 600;">Custom Quote Text</label>
+                        <input type="text" id="thumbCustomQuoteInput" placeholder="Type a catchy lyric or hook..." style="padding: 0.5rem 0.75rem; font-size: 0.82rem; border-radius: 10px; margin: 0;">
+                    </div>
+
+                    <div class="input-group" style="gap: 0.35rem;">
+                        <label for="thumbBadgeInput" style="font-size: 0.82rem; font-weight: 600;">Top Pill Badge (Optional)</label>
+                        <input type="text" id="thumbBadgeInput" value="LYRIC VIDEO" placeholder="e.g. LYRIC VIDEO, OFFICIAL AUDIO, KARAOKE" style="padding: 0.5rem 0.75rem; font-size: 0.82rem; border-radius: 10px; margin: 0;">
+                    </div>
+
+                    <div class="input-group" style="gap: 0.3rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label for="thumbVignetteSlider" style="font-size: 0.82rem; font-weight: 600;">Backdrop Contrast / Vignette</label>
+                            <span id="thumbVignetteValue" class="slider-val-badge" style="font-size: 0.75rem;">45%</span>
+                        </div>
+                        <input type="range" id="thumbVignetteSlider" min="0" max="0.85" step="0.05" value="0.45" style="accent-color: var(--theme-primary); cursor: pointer; height: 6px; border-radius: 3px;">
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; padding-top: 0.15rem;">
+                        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-muted); cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="thumbShowSubText" checked style="width: auto; height: auto; margin: 0; accent-color: var(--theme-primary);">
+                            <span>Show Sub-Lyric / Translation</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-muted); cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="thumbShowWatermark" style="width: auto; height: auto; margin: 0; accent-color: var(--theme-primary);">
+                            <span>Show App Credit</span>
+                        </label>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; padding-top: 0.25rem; border-top: 1px solid var(--glass-border);">
+                        <div class="input-group" style="gap: 0.25rem;">
+                            <label for="thumbResSelect" style="font-size: 0.76rem;">Resolution</label>
+                            <select id="thumbResSelect" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; border-radius: 8px;">
+                                <option value="1080p" selected>1920×1080 (Full HD)</option>
+                                <option value="720p">1280×720 (YouTube Std)</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="gap: 0.25rem;">
+                            <label for="thumbFormatSelect" style="font-size: 0.76rem;">Image Format</label>
+                            <select id="thumbFormatSelect" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; border-radius: 8px;">
+                                <option value="png" selected>PNG (Lossless)</option>
+                                <option value="jpeg">JPG (Compact)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 1.4rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" id="cancelThumbnailGenBtn" class="btn secondary small" style="width: auto; padding: 0.65rem 1.35rem; border-radius: 10px;">Close</button>
+                <button type="button" id="downloadThumbnailBtn" class="btn primary small" style="width: auto; padding: 0.65rem 1.6rem; border-radius: 10px;">⬇️ Download Thumbnail</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Hidden container to preload all web fonts so they display instantly in dropdown and canvas -->
     <div style="position: absolute; visibility: hidden; width: 0; height: 0; overflow: hidden; pointer-events: none;">
         <span style="font-family: 'Outfit';">a</span>
@@ -958,14 +1561,22 @@
     <script src="js/audio.js?v=1.8.0"></script>
     <script src="js/media.js?v=1.8.0"></script>
     <script src="js/bpm.js?v=1.8.0"></script>
-    <script src="js/studio.js?v=1.8.0"></script>
+    <script src="js/LyricStudio/model.js?v=2.1.0"></script>
+    <script src="js/LyricStudio/header.js?v=2.1.0"></script>
+    <script src="js/LyricStudio/editMode.js?v=2.1.0"></script>
+    <script src="js/LyricStudio/syncMode.js?v=2.1.0"></script>
+    <script src="js/LyricStudio/previewMode.js?v=2.1.0"></script>
+    <script src="js/LyricStudio/inspector.js?v=2.1.0"></script>
+    <script src="js/LyricStudio/audioDock.js?v=2.1.0"></script>
+    <script src="js/studio.js?v=2.1.0"></script>
     <script src="js/shortcuts.js?v=1.8.0"></script>
+    <script src="js/thumbnail.js?v=2.1.0"></script>
     <script src="js/export.js?v=1.8.0"></script>
     <script src="js/project.js?v=1.8.0"></script>
     <script src="js/diagnostics.js?v=1.8.0"></script>
     <script src="js/search.js?v=1.8.0"></script>
     <script src="js/ui.js?v=1.8.0"></script>
-    <script src="js/main.js?v=2.0.1"></script>
+    <script src="js/main.js?v=2.1.0"></script>
 </body>
 
 </html>

@@ -174,6 +174,13 @@ function startRecording() {
             playBtn.disabled = false;
             progressContainer.style.display = 'none';
             statusMessage.innerHTML = t('videoGenerated') || 'Video generated and downloaded! 🎉 If you like this app, please <a href="https://github.com/Zexerif/lyric-video-maker" target="_blank" rel="noopener" style="color: var(--theme-secondary); text-decoration: underline; font-weight: bold;">star it on GitHub</a>!';
+
+            // Prompt the user if they would also like a thumbnail after the video download triggers
+            if (typeof ThumbnailGenerator !== 'undefined' && typeof ThumbnailGenerator.promptAfterVideoDownload === 'function') {
+                setTimeout(() => {
+                    ThumbnailGenerator.promptAfterVideoDownload();
+                }, 400);
+            }
         };
 
         // Start recording and playback

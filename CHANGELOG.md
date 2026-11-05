@@ -4,6 +4,19 @@ All notable changes to **Lyric Video Maker** are documented in this file.
 
 ---
 
+## [2.1.0] - 2026-11-05
+
+### 🚀 Highlights & Features
+- **Thumbnail Generator & Post-Download Prompt**:
+  - Automatic post-download modal asking if you would like a matching thumbnail once video export completes.
+  - Dedicated Thumbnail Studio with 4 layout styles (Split Art + Quote, Centered Hero, Lyric Spotlight, and Video Canvas frame).
+  - Auto-selection of best lyric lines, custom hook input, top pill badge, vignette contrast, and 1080p/720p PNG/JPG downloads.
+- **Furigana / Ruby Transliteration Annotation**:
+  - Full Japanese furigana support (<ruby>, <rb>, <rt>, <rp>, and TTML2 tts:ruby) rendering readings centered directly above base kanji.
+  - Full preservation in Lyric Studio, Edit Mode, Sync Mode, Preview Mode, and export formats.
+
+---
+
 ## [2.0.1] - 2026-10-31
 
 ### 🚀 Highlights & Features

@@ -68,48 +68,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (studioTapSyncBtn && typeof LyricStudio !== 'undefined') {
         studioTapSyncBtn.addEventListener('click', () => LyricStudio.toggleTapToSync());
     }
-    if (studioPlayPauseBtn) {
+    if (studioPlayPauseBtn && typeof LyricStudio !== 'undefined') {
         studioPlayPauseBtn.addEventListener('click', () => {
-            if (isPlaying && typeof stopPlayback === 'function') {
-                stopPlayback();
-                studioPlayPauseBtn.textContent = '▶ Play';
-            } else if (typeof startPlayback === 'function') {
-                startPlayback();
-                studioPlayPauseBtn.textContent = '⏸ Pause';
-            }
+            LyricStudio.togglePlayback();
         });
     }
-    if (studioRewindBtn) {
+    if (studioRewindBtn && typeof LyricStudio !== 'undefined') {
         studioRewindBtn.addEventListener('click', () => {
-            if (typeof audioBuffer !== 'undefined' && audioBuffer) {
-                const newTime = Math.max(0, pausedTime - 5);
-                if (typeof syncPreviewToTime === 'function') syncPreviewToTime(newTime);
-                if (isPlaying && typeof stopPlayback === 'function' && typeof startPlayback === 'function') {
-                    stopPlayback();
-                    pausedTime = newTime;
-                    startPlayback();
-                }
-            }
+            LyricStudio.seekRelative(-5);
         });
     }
-    if (studioForwardBtn) {
+    if (studioForwardBtn && typeof LyricStudio !== 'undefined') {
         studioForwardBtn.addEventListener('click', () => {
-            if (typeof audioBuffer !== 'undefined' && audioBuffer) {
-                const newTime = Math.min(audioBuffer.duration, pausedTime + 5);
-                if (typeof syncPreviewToTime === 'function') syncPreviewToTime(newTime);
-                if (isPlaying && typeof stopPlayback === 'function' && typeof startPlayback === 'function') {
-                    stopPlayback();
-                    pausedTime = newTime;
-                    startPlayback();
-                }
-            }
+            LyricStudio.seekRelative(5);
         });
-    }
-    if (studioUndoBtn && typeof HistoryManager !== 'undefined') {
-        studioUndoBtn.addEventListener('click', () => HistoryManager.undo());
-    }
-    if (studioRedoBtn && typeof HistoryManager !== 'undefined') {
-        studioRedoBtn.addEventListener('click', () => HistoryManager.redo());
     }
 
     // 7. Wire Style Preset Buttons
@@ -160,7 +132,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 9. Apply Translations & Draw Initial Frame
+    // 9. Initialize Thumbnail Generator
+    if (typeof ThumbnailGenerator !== 'undefined' && typeof ThumbnailGenerator.init === 'function') {
+        ThumbnailGenerator.init();
+    }
+
+    // 10. Apply Translations & Draw Initial Frame
     if (typeof applyLanguage === 'function' && typeof currentLanguage !== 'undefined') {
         applyLanguage(currentLanguage);
     }
@@ -168,6 +145,45 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFrame(0);
     }
 
-    console.log('✨ Lyric Video Maker v2.0.1 initialized with Lyric Studio, Tap-to-Sync, Style Presets, Audio-Reactive Visuals, Overlapping Vocal Sync, and .ass Subtitle Support.');
+    console.log('✨ Lyric Video Maker v2.1.0 initialized with Lyric Studio, Tap-to-Sync, Style Presets, Audio-Reactive Visuals, Overlapping Vocal Sync, and .ass Subtitle Support.');
 });
 
+
+// Wire Main App 'Auto-Put (Brackets) in Backing Space' button
+document.addEventListener('DOMContentLoaded', () => {
+    const mainBgBtn = document.getElementById('mainAutoBracketBgBtn');
+    if (mainBgBtn) {
+        mainBgBtn.addEventListener('click', () => {
+            if (window.LyricStudio && typeof window.LyricStudio.autoMarkBracketBackingVocals === 'function') {
+                window.LyricStudio.autoMarkBracketBackingVocals(true);
+                window.LyricStudio.applyAndClose();
+                if (window.showToast) window.showToast('🎤 Converted (brackets) to backing vocal space!');
+            } else if (window.lyrics && Array.isArray(window.lyrics)) {
+                let affected = 0;
+                window.lyrics.forEach(line => {
+                    const text = String(line.text || '').trim();
+                    const isFullBracket = /^[([{（【][sS]*[)]}）】]$/.test(text);
+                    if (isFullBracket) {
+                        line.isBacking = true;
+                        line.isBG = true;
+                        affected++;
+                    }
+                    if (Array.isArray(line.words)) {
+                        let inside = false;
+                        line.words.forEach(w => {
+                            const wt = String(w.text || '');
+                            if (/[([{（【]/.test(wt)) inside = true;
+                            if (inside || /[([{（【][sS]*[)]}）】]/.test(wt)) {
+                                w.isBacking = true;
+                                w.isBG = true;
+                            }
+                            if (/[)]}）】]/.test(wt)) inside = false;
+                        });
+                    }
+                });
+                if (typeof window.requestRender === 'function') window.requestRender();
+                if (window.showToast) window.showToast('🎤 Converted (brackets) to backing vocal space!');
+            }
+        });
+    }
+});
