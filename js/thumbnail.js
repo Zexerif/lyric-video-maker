@@ -75,6 +75,7 @@ const ThumbnailGenerator = {
         // Inputs inside Generator Modal
         const badgeInput = document.getElementById('thumbBadgeInput');
         const quoteSelect = document.getElementById('thumbQuoteSelect');
+        const includeQuoteCheckbox = document.getElementById('thumbIncludeQuoteCheckbox');
         const customQuoteInput = document.getElementById('thumbCustomQuoteInput');
         const customQuoteGroup = document.getElementById('thumbCustomQuoteGroup');
         const subTextCheck = document.getElementById('thumbShowSubText');
@@ -91,10 +92,33 @@ const ThumbnailGenerator = {
             });
         }
 
+        if (includeQuoteCheckbox) {
+            includeQuoteCheckbox.addEventListener('change', (e) => {
+                if (!e.target.checked) {
+                    if (this.settings.quoteIndex !== -3) {
+                        this._lastQuoteIndex = this.settings.quoteIndex;
+                    }
+                    this.settings.quoteIndex = -3;
+                    if (quoteSelect) quoteSelect.value = '-3';
+                    if (customQuoteGroup) customQuoteGroup.style.display = 'none';
+                } else {
+                    this.settings.quoteIndex = (typeof this._lastQuoteIndex === 'number' && this._lastQuoteIndex !== -3) ? this._lastQuoteIndex : -1;
+                    if (quoteSelect) quoteSelect.value = String(this.settings.quoteIndex);
+                    if (customQuoteGroup) {
+                        customQuoteGroup.style.display = (this.settings.quoteIndex === -2) ? 'flex' : 'none';
+                    }
+                }
+                this.renderPreview();
+            });
+        }
+
         if (quoteSelect) {
             quoteSelect.addEventListener('change', (e) => {
                 const val = parseInt(e.target.value, 10);
                 this.settings.quoteIndex = isNaN(val) ? -1 : val;
+                if (includeQuoteCheckbox) {
+                    includeQuoteCheckbox.checked = (this.settings.quoteIndex !== -3);
+                }
                 if (customQuoteGroup) {
                     customQuoteGroup.style.display = (this.settings.quoteIndex === -2) ? 'flex' : 'none';
                 }
@@ -246,6 +270,11 @@ const ThumbnailGenerator = {
         if (!quoteSelect.value) {
             this.settings.quoteIndex = -1;
             quoteSelect.value = '-1';
+        }
+
+        const includeQuoteCheckbox = document.getElementById('thumbIncludeQuoteCheckbox');
+        if (includeQuoteCheckbox) {
+            includeQuoteCheckbox.checked = (this.settings.quoteIndex !== -3);
         }
     },
 
@@ -638,17 +667,58 @@ const ThumbnailGenerator = {
                 tCtx.restore();
             }
         } else if (layout === 'hero') {
-            // Centered Hero Card Layout
+            // Centered Hero Card Layout - Vertically and horizontally centers all active elements dynamically
             const centerX = renderW / 2;
-            let curY = hasAlbum ? 115 : 220;
+            const hasBadge = !!(this.settings.badgeText && this.settings.badgeText.trim());
+            const hasQuote = !!(quoteObj && quoteObj.text && quoteObj.text.trim());
 
-            if (this.settings.badgeText && this.settings.badgeText.trim()) {
-                this.drawBadgePill(tCtx, this.settings.badgeText, centerX, curY, 'center', accentColor, fontFamily);
-                curY += 46 + 28;
+            // 1. Measure and wrap Title
+            tCtx.save();
+            tCtx.font = `800 82px "${fontFamily}", sans-serif`;
+            const titleLines = this.wrapTextLines(tCtx, songTitle, 1500).slice(0, 2);
+            tCtx.restore();
+
+            // 2. Measure and wrap Quote if present
+            let quoteLines = [];
+            if (hasQuote) {
+                tCtx.save();
+                tCtx.font = `700 40px "${fontFamily}", sans-serif`;
+                quoteLines = this.wrapTextLines(tCtx, `“${quoteObj.text}”`, 1500).slice(0, 2);
+                tCtx.restore();
             }
 
+            // 3. Compute accurate bounding heights for dynamic vertical centering
+            const badgeH = hasBadge ? 46 : 0;
+            const badgeGap = hasBadge ? 28 : 0;
+
+            let artSize = 420;
+            if (hasAlbum && !hasQuote && !songArtist) {
+                // If only album art and title are present, give the artwork a bit more presence
+                artSize = 480;
+            }
+            const artH = hasAlbum ? artSize : 0;
+            const artGap = hasAlbum ? 34 : 0;
+
+            const titleLineH = 92;
+            const titleH = titleLines.length * titleLineH;
+            const artistH = songArtist ? 52 : 0;
+            const artistGap = songArtist ? 10 : 0;
+
+            const quoteLineH = 50;
+            const quoteH = hasQuote ? (quoteLines.length * quoteLineH) : 0;
+            const quoteGap = hasQuote ? 22 : 0;
+
+            const totalStackH = badgeH + badgeGap + artH + artGap + titleH + artistGap + artistH + quoteGap + quoteH;
+            let curY = Math.max(60, (renderH - totalStackH) / 2);
+
+            // Draw Badge
+            if (hasBadge) {
+                this.drawBadgePill(tCtx, this.settings.badgeText, centerX, curY, 'center', accentColor, fontFamily);
+                curY += badgeH + badgeGap;
+            }
+
+            // Draw Album Art
             if (hasAlbum) {
-                const artSize = 420;
                 const artX = centerX - artSize / 2;
                 tCtx.save();
                 tCtx.shadowColor = 'rgba(0, 0, 0, 0.7)';
@@ -659,10 +729,19 @@ const ThumbnailGenerator = {
                 tCtx.clip();
                 tCtx.drawImage(albumImage, artX, curY, artSize, artSize);
                 tCtx.restore();
-                curY += artSize + 38;
+
+                tCtx.save();
+                tCtx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+                tCtx.lineWidth = 2.5;
+                tCtx.beginPath();
+                tCtx.roundRect(artX, curY, artSize, artSize, 32);
+                tCtx.stroke();
+                tCtx.restore();
+
+                curY += artH + artGap;
             }
 
-            // Song Title Centered
+            // Draw Song Title Centered
             tCtx.save();
             tCtx.font = `800 82px "${fontFamily}", sans-serif`;
             tCtx.fillStyle = '#ffffff';
@@ -670,27 +749,30 @@ const ThumbnailGenerator = {
             tCtx.textBaseline = 'top';
             tCtx.shadowColor = 'rgba(0, 0, 0, 0.75)';
             tCtx.shadowBlur = 24;
-            const titleLines = this.wrapTextLines(tCtx, songTitle, 1500).slice(0, 2);
             for (const tLine of titleLines) {
                 tCtx.fillText(tLine, centerX, curY, 1500);
-                curY += 92;
+                curY += titleLineH;
             }
             tCtx.restore();
 
+            // Draw Artist Name
             if (songArtist) {
-                curY += 6;
+                curY += artistGap;
                 tCtx.save();
                 tCtx.font = `600 42px "${fontFamily}", sans-serif`;
                 tCtx.fillStyle = 'rgba(255, 255, 255, 0.78)';
                 tCtx.textAlign = 'center';
                 tCtx.textBaseline = 'top';
+                tCtx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+                tCtx.shadowBlur = 14;
                 tCtx.fillText(songArtist, centerX, curY, 1400);
                 tCtx.restore();
-                curY += 56;
+                curY += artistH;
             }
 
-            if (quoteObj.text) {
-                curY += 16;
+            // Draw Quote if enabled
+            if (hasQuote && quoteLines.length > 0) {
+                curY += quoteGap;
                 tCtx.save();
                 tCtx.font = `700 40px "${fontFamily}", sans-serif`;
                 tCtx.fillStyle = textColor;
@@ -698,7 +780,10 @@ const ThumbnailGenerator = {
                 tCtx.textBaseline = 'top';
                 tCtx.shadowColor = accentColor;
                 tCtx.shadowBlur = 20;
-                tCtx.fillText(`“${quoteObj.text}”`, centerX, curY, 1500);
+                for (const qLine of quoteLines) {
+                    tCtx.fillText(qLine, centerX, curY, 1500);
+                    curY += quoteLineH;
+                }
                 tCtx.restore();
             }
         } else if (layout === 'quote') {
