@@ -5,6 +5,8 @@ const ThumbnailGenerator = {
     promptOpen: false,
     settings: {
         layout: 'split',        // 'split', 'hero', 'quote', 'canvas'
+        showQuote: true, // controls visibility of lyric quote
+
         badgeText: 'LYRIC VIDEO',
         quoteIndex: -1,         // -1 = auto best line, -2 = custom quote, -3 = none, >=0 = lyric index
         customQuote: '',
@@ -94,7 +96,10 @@ const ThumbnailGenerator = {
 
         if (includeQuoteCheckbox) {
             includeQuoteCheckbox.addEventListener('change', (e) => {
+                // Update flag first
+                this.settings.showQuote = e.target.checked;
                 if (!e.target.checked) {
+                    // Hide quote: store last index and set to none
                     if (this.settings.quoteIndex !== -3) {
                         this._lastQuoteIndex = this.settings.quoteIndex;
                     }
@@ -102,6 +107,7 @@ const ThumbnailGenerator = {
                     if (quoteSelect) quoteSelect.value = '-3';
                     if (customQuoteGroup) customQuoteGroup.style.display = 'none';
                 } else {
+                    // Show quote: restore previous index or default auto-pick
                     this.settings.quoteIndex = (typeof this._lastQuoteIndex === 'number' && this._lastQuoteIndex !== -3) ? this._lastQuoteIndex : -1;
                     if (quoteSelect) quoteSelect.value = String(this.settings.quoteIndex);
                     if (customQuoteGroup) {
@@ -118,6 +124,8 @@ const ThumbnailGenerator = {
                 this.settings.quoteIndex = isNaN(val) ? -1 : val;
                 if (includeQuoteCheckbox) {
                     includeQuoteCheckbox.checked = (this.settings.quoteIndex !== -3);
+                    // sync showQuote flag
+                    this.settings.showQuote = includeQuoteCheckbox.checked;
                 }
                 if (customQuoteGroup) {
                     customQuoteGroup.style.display = (this.settings.quoteIndex === -2) ? 'flex' : 'none';
@@ -204,6 +212,10 @@ const ThumbnailGenerator = {
     },
 
     getSelectedQuoteObject(lyricsList) {
+        // If quote display is disabled, return empty object regardless of index
+        if (!this.settings.showQuote) {
+            return { text: '', subText: '', words: [] };
+        }
         const list = Array.isArray(lyricsList) ? lyricsList : (typeof lyrics !== 'undefined' ? lyrics : []);
         const idx = this.settings.quoteIndex;
 
@@ -274,7 +286,7 @@ const ThumbnailGenerator = {
 
         const includeQuoteCheckbox = document.getElementById('thumbIncludeQuoteCheckbox');
         if (includeQuoteCheckbox) {
-            includeQuoteCheckbox.checked = (this.settings.quoteIndex !== -3);
+            includeQuoteCheckbox.checked = !!this.settings.showQuote;
         }
     },
 
@@ -670,7 +682,7 @@ const ThumbnailGenerator = {
             // Centered Hero Card Layout - Vertically and horizontally centers all active elements dynamically
             const centerX = renderW / 2;
             const hasBadge = !!(this.settings.badgeText && this.settings.badgeText.trim());
-            const hasQuote = !!(quoteObj && quoteObj.text && quoteObj.text.trim());
+            const hasQuote = this.settings.showQuote && !!(quoteObj && quoteObj.text && quoteObj.text.trim());
 
             // 1. Measure and wrap Title
             tCtx.save();

@@ -4,6 +4,17 @@ All notable changes to **Lyric Video Maker** are documented in this file.
 
 ---
 
+## [2.1.1] - 2026-11-05
+
+### 🚀 Highlights & Features
+- **Thumbnail Studio Polish & Bugfixes**:
+  - Direct "Show Quote" checkbox toggle reliably hides the lyric quote across all layouts.
+  - Centered Hero card dynamic vertical alignment when quotes or metadata elements are toggled off.
+- **Furigana / Ruby Transliteration Support**:
+  - Full Japanese furigana support (`<ruby>`, `<rb>`, `<rt>`, `<rp>`, and TTML2 `tts:ruby`) rendering readings centered above base kanji.
+
+---
+
 ## [2.1.0] - 2026-11-05
 
 ### 🚀 Highlights & Features

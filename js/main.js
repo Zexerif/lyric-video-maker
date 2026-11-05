@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFrame(0);
     }
 
-    console.log('✨ Lyric Video Maker v2.1.0 initialized with Lyric Studio, Tap-to-Sync, Style Presets, Audio-Reactive Visuals, Overlapping Vocal Sync, and .ass Subtitle Support.');
+    console.log('✨ Lyric Video Maker v2.1.1 initialized with Lyric Studio, Tap-to-Sync, Style Presets, Audio-Reactive Visuals, Overlapping Vocal Sync, and .ass Subtitle Support.');
 });
 
 
