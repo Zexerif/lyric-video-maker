@@ -8,52 +8,6 @@
 
 ---
 
-## 🎉 What's New in v2.1.0
-
-- 📄 **Advanced SubStation Alpha (.ass / .ssa) Support**:
-  - Full support for `.ass` and `.ssa` subtitle files.
-  - Word/syllable-level karaoke tag support (`\k`, `\K`, `\kf`, `\ko`) with precise centisecond timing.
-  - Automatic parsing of dual-language lines delimited by `\N` and formatting tag cleanup.
-  - Full load, waveform sync, and timestamp editing support inside Lyric Studio.
-- 🛠️ **Stability & Polish**:
-  - Fixed background gradient tile invalidation flickering under glass panels.
-  - Fixed media rack 2x2 grid overflow during audio decoding.
-  - Clamped playhead time badge positioning to eliminate edge clipping on waveform scrubber.
-  - Improved BPM timeline "+ At Playhead" validation, feedback messages, and live preview sync.
-
----
-
-## 🎉 What's New in v2.0.0
-
-- ✍️ **Interactive Lyric Studio & Tap-to-Sync**:
-  - Fullscreen visual timeline editor with audio waveform scrubbing and live playhead seeking.
-  - Interactive line & word editing with +/- 50ms and +/- 200ms fine-tuning nudges.
-  - **Tap-to-Sync**: Tap <kbd>Space</kbd> as music plays to stamp real-time synchronization on any lyric line.
-- 🎤 **Apple Music-Style Backing Vocals & Overlapping Vocal Sync**:
-  - Secondary vocal typography rendered at 73% font size with styled or normal rendering.
-  - **Overlapping Vocal Playback Setting**: When backing vocals or ad-libs occur during a main vocal line, displays them alongside the active melody rather than prematurely skipping ahead.
-- 🌐 **Dual-Language & Sub-Lyrics Support**:
-  - Auto-detects dual-language pairs separated by `//`, `///`, `|`, or consecutive timestamps.
-  - Renders translations or romaji subtitles directly underneath main lyric lines with configurable display options.
-- 🎨 **One-Click Curated Style Presets**:
-  - Instant aesthetic switching: *Apple Music*, *Spotify Canvas*, and *Minimalist Modern*.
-- ↶ **Global Undo & Redo (`Ctrl+Z` / `Ctrl+Y`)**:
-  - Dedicated history stack tracking style adjustments, editor changes, and preset selections.
-- ⌨️ **Comprehensive Keyboard Shortcuts**:
-  - Full keyboard transport control (`Space`, arrow navigation, `Ctrl+Z`, `Ctrl+Y`, `Ctrl+S`, `Ctrl+O`, `L` for Studio, `?` for cheat-sheet).
-- ⚡ **Audio-Reactive Visuals**:
-  - Web Audio API real-time frequency analysis driving dynamic background glows, pulsing artwork bass beats, or glowing spectrum bars.
-- 🔍 **iTunes Search & High-Res Artwork Auto-Fill**:
-  - Search any track on iTunes to auto-fill title, artist, key, BPM, and high-resolution cover art.
-- 📥 **Integrated Synced Lyrics Search**:
-  - Query LyricsPlus and LRCLIB directly to retrieve timed LRC/TTML lyrics in one click.
-- 📱 **Streamlined UI & Zero-Overflow Layout**:
-  - 2x2 media rack, uniform 38px pill button aesthetic, and adaptive layout that fits cleanly across all screen sizes.
-- 🧩 **Modular ES6 Architecture**:
-  - Split into 20 clean, decoupled modules with comprehensive unit and regression testing.
-
----
-
 ## 📸 Demo
 
 ![Lyric Video Maker Demo](demo.png)
