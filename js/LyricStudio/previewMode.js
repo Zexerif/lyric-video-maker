@@ -246,7 +246,22 @@
 
                         let fill = 0;
                         let isWordActive = false;
-                        if (curTime >= wEnd) {
+                        if (wObj && Array.isArray(wObj.rubySegments) && wObj.rubySegments.length > 0) {
+                            const segCount = wObj.rubySegments.length;
+                            let totalSegProgress = 0;
+                            for (let s = 0; s < segCount; s++) {
+                                const seg = wObj.rubySegments[s];
+                                const sStart = typeof seg.time === 'number' ? seg.time : wStart;
+                                const sEnd = (typeof seg.endTime === 'number' && seg.endTime > sStart) ? seg.endTime : wEnd;
+                                if (curTime >= sEnd) {
+                                    totalSegProgress += 1;
+                                } else if (curTime > sStart) {
+                                    totalSegProgress += Math.max(0, Math.min(1, (curTime - sStart) / Math.max(0.02, sEnd - sStart)));
+                                    isWordActive = true;
+                                }
+                            }
+                            fill = (totalSegProgress / segCount) * 100;
+                        } else if (curTime >= wEnd) {
                             fill = 100;
                         } else if (curTime > wStart) {
                             fill = Math.max(0, Math.min(100, ((curTime - wStart) / Math.max(0.02, wEnd - wStart)) * 100));

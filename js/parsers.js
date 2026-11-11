@@ -494,18 +494,100 @@ function parseTtml(ttmlText) {
         const pairs = [];
         let pendingBase = '';
         let pendingRt = '';
+        let pendingBaseStart = null;
+        let pendingBaseEnd = null;
+        let pendingRtSegments = [];
+
+        function getElementOwnTiming(el) {
+            if (!el || typeof el.getAttribute !== 'function') return { start: null, end: null };
+            const b = el.getAttribute('begin');
+            const e = el.getAttribute('end');
+            const d = el.getAttribute('dur');
+            const start = b ? parseTime(b) : null;
+            let end = null;
+            if (e) {
+                end = parseTime(e);
+            } else if (d && start !== null) {
+                end = start + parseTime(d);
+            }
+            return { start, end };
+        }
 
         function flushPair() {
             const b = cleanSpanText(pendingBase);
             const r = pendingRt.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
             if (b) {
-                pairs.push({ text: b, ruby: r });
+                const startCandidates = [];
+                const endCandidates = [];
+                if (pendingBaseStart !== null) startCandidates.push(pendingBaseStart);
+                if (pendingBaseEnd !== null) endCandidates.push(pendingBaseEnd);
+                for (let i = 0; i < pendingRtSegments.length; i++) {
+                    if (pendingRtSegments[i].time !== null) startCandidates.push(pendingRtSegments[i].time);
+                    if (pendingRtSegments[i].endTime !== null) endCandidates.push(pendingRtSegments[i].endTime);
+                }
+                const pairTime = startCandidates.length > 0 ? Math.min(...startCandidates) : null;
+                const pairEndTime = endCandidates.length > 0 ? Math.max(...endCandidates) : null;
+
+                let resolvedSegments = null;
+                if (pendingRtSegments.length > 0 && pendingRtSegments.some(s => s.time !== null || s.endTime !== null)) {
+                    resolvedSegments = pendingRtSegments.map((seg, idx) => {
+                        const sTime = seg.time !== null
+                            ? seg.time
+                            : (idx > 0 && pendingRtSegments[idx - 1].endTime !== null ? pendingRtSegments[idx - 1].endTime : pairTime);
+                        const sEnd = seg.endTime !== null
+                            ? seg.endTime
+                            : (idx < pendingRtSegments.length - 1 && pendingRtSegments[idx + 1].time !== null ? pendingRtSegments[idx + 1].time : pairEndTime);
+                        return {
+                            text: seg.text,
+                            time: sTime,
+                            endTime: sEnd
+                        };
+                    });
+                }
+
+                const pairObj = { text: b, ruby: r, time: pairTime, endTime: pairEndTime };
+                if (resolvedSegments && resolvedSegments.length > 0) {
+                    pairObj.rubySegments = resolvedSegments;
+                }
+                pairs.push(pairObj);
             }
             pendingBase = '';
             pendingRt = '';
+            pendingBaseStart = null;
+            pendingBaseEnd = null;
+            pendingRtSegments = [];
         }
 
-        function walkRuby(n) {
+        function collectRubyTextNode(n, inheritedContainerStart = null, inheritedContainerEnd = null) {
+            const childEls = Array.from(n.childNodes || []).filter(c => c.nodeType === 1);
+            const hasTimedOrRubyChildren = childEls.some(c => {
+                const cr = getRubyRole(c);
+                return cr === 'text' || c.getAttribute('begin') || c.getAttribute('end') || c.getAttribute('dur');
+            });
+            const own = getElementOwnTiming(n);
+            const effStart = own.start !== null ? own.start : inheritedContainerStart;
+            const effEnd = own.end !== null ? own.end : inheritedContainerEnd;
+
+            if (hasTimedOrRubyChildren) {
+                childEls.forEach(c => {
+                    if (getRubyRole(c) === 'delimiter') return;
+                    collectRubyTextNode(c, effStart, effEnd);
+                });
+                return;
+            }
+            const rtRaw = n.textContent || '';
+            pendingRt += rtRaw;
+            const rtClean = rtRaw.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+            if (rtClean) {
+                pendingRtSegments.push({
+                    text: rtClean,
+                    time: effStart,
+                    endTime: effEnd
+                });
+            }
+        }
+
+        function walkRuby(n, inheritedContainerStart = null, inheritedContainerEnd = null) {
             if (n.nodeType === 3) {
                 if (pendingRt && pendingBase) {
                     flushPair();
@@ -517,20 +599,34 @@ function parseTtml(ttmlText) {
             const rRole = getRubyRole(n);
             if (rRole === 'delimiter') return;
             if (rRole === 'text') {
-                pendingRt += n.textContent || '';
+                collectRubyTextNode(n, inheritedContainerStart, inheritedContainerEnd);
+                return;
+            }
+            if (rRole === 'textcontainer') {
+                const own = getElementOwnTiming(n);
+                const cStart = own.start !== null ? own.start : inheritedContainerStart;
+                const cEnd = own.end !== null ? own.end : inheritedContainerEnd;
+                Array.from(n.childNodes || []).forEach(ch => walkRuby(ch, cStart, cEnd));
                 return;
             }
             if (rRole === 'base') {
                 if (pendingRt && pendingBase) {
                     flushPair();
                 }
+                const own = getElementOwnTiming(n);
+                if (own.start !== null) {
+                    pendingBaseStart = pendingBaseStart !== null ? Math.min(pendingBaseStart, own.start) : own.start;
+                }
+                if (own.end !== null) {
+                    pendingBaseEnd = pendingBaseEnd !== null ? Math.max(pendingBaseEnd, own.end) : own.end;
+                }
                 pendingBase += n.textContent || '';
                 return;
             }
-            Array.from(n.childNodes || []).forEach(walkRuby);
+            Array.from(n.childNodes || []).forEach(ch => walkRuby(ch, inheritedContainerStart, inheritedContainerEnd));
         }
 
-        Array.from(rootEl.childNodes || []).forEach(walkRuby);
+        Array.from(rootEl.childNodes || []).forEach(ch => walkRuby(ch, null, null));
         if (pendingBase) flushPair();
         return pairs;
     }
@@ -554,6 +650,47 @@ function parseTtml(ttmlText) {
 
     // Fallback for XML parsing errors or 0 paragraphs returned
     if (paragraphs.length === 0 || parserErrors.length > 0) {
+        function extractTopLevelSpans(html) {
+            const list = [];
+            const tagReg = /<\/?span\b[^>]*>/gi;
+            let depth = 0;
+            let startIdx = -1;
+            let openAttrs = '';
+            let bodyStartIdx = -1;
+            let m;
+            while ((m = tagReg.exec(html)) !== null) {
+                const tagStr = m[0];
+                const isClose = /^<\s*\//.test(tagStr);
+                const isSelfClose = /\/\s*>$/.test(tagStr);
+                if (!isClose && !isSelfClose) {
+                    if (depth === 0) {
+                        startIdx = m.index;
+                        const attrM = tagStr.match(/^<span\b([^>]*)>/i);
+                        openAttrs = attrM ? attrM[1] : '';
+                        bodyStartIdx = tagReg.lastIndex;
+                    }
+                    depth++;
+                } else if (isClose) {
+                    if (depth > 0) {
+                        depth--;
+                        if (depth === 0 && startIdx !== -1) {
+                            const body = html.slice(bodyStartIdx, m.index);
+                            const rest = html.slice(tagReg.lastIndex);
+                            const spaceM = rest.match(/^\s*/);
+                            const afterSpace = spaceM ? spaceM[0] : '';
+                            list.push({
+                                attrs: openAttrs,
+                                body,
+                                afterSpace
+                            });
+                            startIdx = -1;
+                        }
+                    }
+                }
+            }
+            return list;
+        }
+
         const pRegex = /<p\b([^>]*)>([\s\S]*?)(?=<\/p>|<p\b|<\/div>|<\/body>|$)/gi;
         let pMatch;
         while ((pMatch = pRegex.exec(ttmlText)) !== null) {
@@ -576,7 +713,7 @@ function parseTtml(ttmlText) {
             let metaTrans = null;
             let metaRom = null;
             // Extract translation / romanization spans first so they aren't mixed into words
-            content = content.replace(/<span\b([^>]*)>([\s\S]*?)<\/span>/gi, (fullSpan, sAttrs, sBody) => {
+            content = content.replace(/<span\b([^>]*\b(?:ttm:)?role="[^"]+"[^>]*)>([\s\S]*?)<\/span>/gi, (fullSpan, sAttrs, sBody) => {
                 const roleM = sAttrs.match(/(?:ttm:)?role="([^"]+)"/i);
                 if (roleM) {
                     const roleVal = roleM[1].toLowerCase();
@@ -595,16 +732,20 @@ function parseTtml(ttmlText) {
             });
 
             const spans = [];
-            const spanRegex = /<span\b([^>]*)>([\s\S]*?)<\/span>(\s*)/gi;
-            let sMatch;
-            while ((sMatch = spanRegex.exec(content)) !== null) {
-                const sAttrs = sMatch[1];
-                const sBody = sMatch[2];
-                const afterSpace = sMatch[3] || '';
+            const topSpans = extractTopLevelSpans(content);
+            for (let si = 0; si < topSpans.length; si++) {
+                const sAttrs = topSpans[si].attrs;
+                const sBody = topSpans[si].body;
+                const afterSpace = topSpans[si].afterSpace || '';
                 const sBeginM = sAttrs.match(/begin="([^"]+)"/i);
                 const sEndM = sAttrs.match(/end="([^"]+)"/i);
                 const sDurM = sAttrs.match(/dur="([^"]+)"/i);
-                const wTime = sBeginM ? parseTime(sBeginM[1]) : time;
+                const hasOwnStart = Boolean(sBeginM);
+                const hasOwnEnd = Boolean(sEndM || sDurM);
+                const fallbackStart = (!hasOwnStart && spans.length > 0 && typeof spans[spans.length - 1].endTime === 'number')
+                    ? spans[spans.length - 1].endTime
+                    : time;
+                const wTime = sBeginM ? parseTime(sBeginM[1]) : fallbackStart;
                 let wEndTime;
                 if (sEndM) {
                     wEndTime = parseTime(sEndM[1]);
@@ -616,8 +757,61 @@ function parseTtml(ttmlText) {
                     wEndTime = wTime + 1;
                 }
                 const isSpanBg = /(?:ttm:)?role="(?:x-bg|background|backing)"/i.test(sAttrs);
+                const isTtsRubyContainer = /(?:tts:)?ruby="container"/i.test(sAttrs) || /(?:tts:)?ruby="base"/i.test(sBody);
 
-                if (containsRubyMarkup(sBody)) {
+                if (isTtsRubyContainer) {
+                    const baseMatches = [];
+                    const baseReg = /<span\b([^>]*\b(?:tts:)?ruby="base"[^>]*)>([\s\S]*?)<\/span>/gi;
+                    let bm;
+                    while ((bm = baseReg.exec(sBody)) !== null) {
+                        baseMatches.push({ attrs: bm[1], text: cleanSpanText(bm[2].replace(/<[^>]+>/g, '')) });
+                    }
+                    const rtSegments = [];
+                    const rtReg = /<span\b([^>]*\b(?:tts:)?ruby="text"[^>]*)>([\s\S]*?)<\/span>/gi;
+                    let rm;
+                    while ((rm = rtReg.exec(sBody)) !== null) {
+                        const rAttrs = rm[1];
+                        const rText = rm[2].replace(/<[^>]+>/g, '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+                        if (!rText) continue;
+                        const rbM = rAttrs.match(/begin="([^"]+)"/i);
+                        const reM = rAttrs.match(/end="([^"]+)"/i);
+                        const rdM = rAttrs.match(/dur="([^"]+)"/i);
+                        const rStart = rbM ? parseTime(rbM[1]) : null;
+                        let rEnd = null;
+                        if (reM) rEnd = parseTime(reM[1]);
+                        else if (rdM && rStart !== null) rEnd = rStart + parseTime(rdM[1]);
+                        rtSegments.push({ text: rText, time: rStart, endTime: rEnd });
+                    }
+
+                    const baseStr = baseMatches.map(b => b.text).join('');
+                    const rubyStr = rtSegments.map(r => r.text).join('');
+                    if (baseStr) {
+                        const validStarts = rtSegments.filter(r => r.time !== null).map(r => r.time);
+                        const validEnds = rtSegments.filter(r => r.endTime !== null).map(r => r.endTime);
+                        const resolvedStart = validStarts.length > 0 ? Math.min(...validStarts) : wTime;
+                        const resolvedEnd = validEnds.length > 0 ? Math.max(...validEnds) : wEndTime;
+                        let tokText = baseStr;
+                        if (/\s/.test(afterSpace) && !CJK_REGEX.test(tokText) && !tokText.endsWith(' ')) {
+                            tokText += ' ';
+                        }
+                        const spanObj = {
+                            text: tokText,
+                            ruby: rubyStr,
+                            time: resolvedStart,
+                            endTime: resolvedEnd,
+                            isBacking: isSpanBg,
+                            _inferredEnd: !(validEnds.length > 0 || hasOwnEnd)
+                        };
+                        if (rtSegments.length > 0 && (validStarts.length > 0 || validEnds.length > 0)) {
+                            spanObj.rubySegments = rtSegments.map((seg, idx) => ({
+                                text: seg.text,
+                                time: seg.time !== null ? seg.time : (idx > 0 && rtSegments[idx - 1].endTime !== null ? rtSegments[idx - 1].endTime : resolvedStart),
+                                endTime: seg.endTime !== null ? seg.endTime : (idx < rtSegments.length - 1 && rtSegments[idx + 1].time !== null ? rtSegments[idx + 1].time : resolvedEnd)
+                            }));
+                        }
+                        spans.push(spanObj);
+                    }
+                } else if (containsRubyMarkup(sBody)) {
                     const rubySegs = parseInlineRubyTokens(sBody);
                     const segDur = Math.max(0.05, wEndTime - wTime) / Math.max(1, rubySegs.length);
                     rubySegs.forEach((seg, sIdx) => {
@@ -630,7 +824,8 @@ function parseTtml(ttmlText) {
                             ruby: seg.ruby || '',
                             time: wTime + sIdx * segDur,
                             endTime: wTime + (sIdx + 1) * segDur,
-                            isBacking: isSpanBg
+                            isBacking: isSpanBg,
+                            _inferredEnd: !hasOwnEnd
                         });
                     });
                 } else {
@@ -639,9 +834,16 @@ function parseTtml(ttmlText) {
                         if (/\s/.test(afterSpace) && !CJK_REGEX.test(sText) && !sText.endsWith(' ')) {
                             sText += ' ';
                         }
-                        spans.push({ text: sText, ruby: '', time: wTime, endTime: wEndTime, isBacking: isSpanBg });
+                        spans.push({ text: sText, ruby: '', time: wTime, endTime: wEndTime, isBacking: isSpanBg, _inferredEnd: !hasOwnEnd });
                     }
                 }
+            }
+
+            for (let k = 0; k < spans.length; k++) {
+                if (spans[k]._inferredEnd && k < spans.length - 1 && spans[k + 1].time > spans[k].time && spans[k].endTime > spans[k + 1].time) {
+                    spans[k].endTime = spans[k + 1].time;
+                }
+                delete spans[k]._inferredEnd;
             }
 
             if (spans.length === 0 && containsRubyMarkup(content)) {
@@ -758,20 +960,35 @@ function parseTtml(ttmlText) {
                 }
 
                 function pushRubyContainerElement(el, inheritedStart, inheritedEnd, inheritedBacking) {
-                    const { wTime, wEndTime } = resolveNodeTiming(el, inheritedStart, inheritedEnd);
+                    const hasOwnStart = Boolean(el && typeof el.getAttribute === 'function' && el.getAttribute('begin'));
+                    const hasOwnEnd = Boolean(el && typeof el.getAttribute === 'function' && (el.getAttribute('end') || el.getAttribute('dur')));
+                    const fallbackStart = (!hasOwnStart && lastWord && typeof lastWord.endTime === 'number') ? lastWord.endTime : inheritedStart;
+                    const { wTime, wEndTime } = resolveNodeTiming(el, fallbackStart, inheritedEnd);
                     const isBacking = checkIfBgElement(el) || inheritedBacking || isLineBacking;
                     const pairs = extractNodeBaseAndRubyPairs(el);
                     if (pairs.length > 0) {
                         const totalDur = Math.max(0.05, wEndTime - wTime);
                         const stepDur = totalDur / pairs.length;
                         pairs.forEach((pair, pIdx) => {
+                            const hasPairStart = typeof pair.time === 'number' && !isNaN(pair.time);
+                            const hasPairEnd = typeof pair.endTime === 'number' && !isNaN(pair.endTime);
+                            const pStart = hasPairStart ? pair.time : (wTime + pIdx * stepDur);
+                            const pEnd = (hasPairEnd && pair.endTime > pStart)
+                                ? pair.endTime
+                                : (hasPairStart
+                                    ? (pIdx < pairs.length - 1 && typeof pairs[pIdx + 1].time === 'number' ? pairs[pIdx + 1].time : Math.max(pStart + 0.05, wEndTime))
+                                    : (wTime + (pIdx + 1) * stepDur));
                             const wordObj = {
                                 text: pair.text,
                                 ruby: pair.ruby || '',
-                                time: wTime + pIdx * stepDur,
-                                endTime: wTime + (pIdx + 1) * stepDur,
-                                isBacking
+                                time: pStart,
+                                endTime: pEnd,
+                                isBacking,
+                                _inferredEnd: !(hasPairEnd || hasOwnEnd)
                             };
+                            if (Array.isArray(pair.rubySegments) && pair.rubySegments.length > 0) {
+                                wordObj.rubySegments = pair.rubySegments;
+                            }
                             words.push(wordObj);
                             lastWord = wordObj;
                         });
@@ -793,8 +1010,8 @@ function parseTtml(ttmlText) {
                         }
 
                         const rRole = getRubyRole(node);
-                        if (rRole === 'delimiter' || rRole === 'text') {
-                            // Never emit <rt> or <rp> as standalone base lyric words!
+                        if (rRole === 'delimiter' || rRole === 'text' || rRole === 'textcontainer') {
+                            // Never emit <rt>, <rp>, or ruby textContainer as standalone base lyric words!
                             return;
                         }
                         if (rRole === 'container') {
@@ -802,7 +1019,10 @@ function parseTtml(ttmlText) {
                             return;
                         }
 
-                        const { wTime, wEndTime } = resolveNodeTiming(node, inheritedStart, inheritedEnd);
+                        const hasOwnStart = Boolean(node.getAttribute && node.getAttribute('begin'));
+                        const hasOwnEnd = Boolean(node.getAttribute && (node.getAttribute('end') || node.getAttribute('dur')));
+                        const fallbackStart = (!hasOwnStart && lastWord && typeof lastWord.endTime === 'number') ? lastWord.endTime : inheritedStart;
+                        const { wTime, wEndTime } = resolveNodeTiming(node, fallbackStart, inheritedEnd);
                         const isBacking = checkIfBgElement(node) || checkIfBgElement(node.parentElement) || inheritedBacking || isLineBacking;
                         const childElements = Array.from(node.childNodes).filter(n => n.nodeType === 1);
                         const hasChildElements = childElements.length > 0;
@@ -811,7 +1031,7 @@ function parseTtml(ttmlText) {
                         const hasNestedTimedSpan = childElements.some(ch => ch.tagName && ch.tagName.toLowerCase() === 'span' && ch.getAttribute('begin') && !getRubyRole(ch));
                         const hasRubyChild = childElements.some(ch => {
                             const cr = getRubyRole(ch);
-                            return cr === 'container' || cr === 'text' || cr === 'base';
+                            return cr === 'container' || cr === 'text' || cr === 'base' || cr === 'textcontainer';
                         });
 
                         if (node.tagName.toLowerCase() === 'span' && hasRubyChild && !hasNestedTimedSpan) {
@@ -820,13 +1040,25 @@ function parseTtml(ttmlText) {
                                 const totalDur = Math.max(0.05, wEndTime - wTime);
                                 const stepDur = totalDur / pairs.length;
                                 pairs.forEach((pair, pIdx) => {
+                                    const hasPairStart = typeof pair.time === 'number' && !isNaN(pair.time);
+                                    const hasPairEnd = typeof pair.endTime === 'number' && !isNaN(pair.endTime);
+                                    const pStart = hasPairStart ? pair.time : (wTime + pIdx * stepDur);
+                                    const pEnd = (hasPairEnd && pair.endTime > pStart)
+                                        ? pair.endTime
+                                        : (hasPairStart
+                                            ? (pIdx < pairs.length - 1 && typeof pairs[pIdx + 1].time === 'number' ? pairs[pIdx + 1].time : Math.max(pStart + 0.05, wEndTime))
+                                            : (wTime + (pIdx + 1) * stepDur));
                                     const wordObj = {
                                         text: pair.text,
                                         ruby: pair.ruby || '',
-                                        time: wTime + pIdx * stepDur,
-                                        endTime: wTime + (pIdx + 1) * stepDur,
-                                        isBacking
+                                        time: pStart,
+                                        endTime: pEnd,
+                                        isBacking,
+                                        _inferredEnd: !(hasPairEnd || hasOwnEnd)
                                     };
+                                    if (Array.isArray(pair.rubySegments) && pair.rubySegments.length > 0) {
+                                        wordObj.rubySegments = pair.rubySegments;
+                                    }
                                     words.push(wordObj);
                                     lastWord = wordObj;
                                 });
@@ -837,7 +1069,7 @@ function parseTtml(ttmlText) {
                         if (node.tagName.toLowerCase() === 'span' && !hasChildElements) {
                             const wText = cleanSpanText(node.textContent);
                             if (wText !== '') {
-                                const wordObj = { text: wText, ruby: '', time: wTime, endTime: wEndTime, isBacking };
+                                const wordObj = { text: wText, ruby: '', time: wTime, endTime: wEndTime, isBacking, _inferredEnd: !hasOwnEnd };
                                 words.push(wordObj);
                                 lastWord = wordObj;
                             }
@@ -855,7 +1087,8 @@ function parseTtml(ttmlText) {
                                     ruby: '',
                                     time: lastWord ? lastWord.endTime : inheritedStart,
                                     endTime: inheritedEnd || ((lastWord ? lastWord.endTime : inheritedStart) + 0.5),
-                                    isBacking: inheritedBacking
+                                    isBacking: inheritedBacking,
+                                    _inferredEnd: true
                                 };
                                 words.push(wordObj);
                                 lastWord = wordObj;
@@ -871,6 +1104,14 @@ function parseTtml(ttmlText) {
                 }
 
                 Array.from(p.childNodes).forEach(ch => traverse(ch, time, pEndTime, isLineBacking));
+
+                // Clamp inferred end times so untimed containers/spans never stretch past subsequent timed words
+                for (let j = 0; j < words.length; j++) {
+                    if (words[j]._inferredEnd && j < words.length - 1 && words[j + 1].time > words[j].time && words[j].endTime > words[j + 1].time) {
+                        words[j].endTime = words[j + 1].time;
+                    }
+                    delete words[j]._inferredEnd;
+                }
 
                 // Detect parenthetical backing vocals in the words sequence (second pass)
                 let insideParentheses = false;

@@ -317,6 +317,103 @@ assert.strictEqual(domParsedTtml[0].words[1].ruby, '');
 assert.strictEqual(domParsedTtml[0].words[2].text, '心');
 assert.strictEqual(domParsedTtml[0].words[2].ruby, 'こころ');
 
+// Test AMLL tts:ruby="container" + tts:ruby="textContainer" with timed tts:ruby="text" spans (both fallback & DOMParser paths)
+const amllRubyBugReportTtml = '<tt xmlns="http://www.w3.org/ns/ttml" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:amll="http://www.example.com/ns/amll"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body dur="18.603"><div begin="12.748" end="18.603"><p begin="12.748" end="18.603" itunes:key="L1" ttm:agent="v1"><span tts:ruby="container"><span tts:ruby="base">全</span><span tts:ruby="textContainer"><span tts:ruby="text" begin="12.748" end="13.487">す</span><span tts:ruby="text" begin="13.487" end="13.762">べ</span></span></span><span begin="13.762" end="14.311">て</span><span begin="14.311" end="14.572">は</span><span tts:ruby="container"><span tts:ruby="base">自</span><span tts:ruby="textContainer"><span tts:ruby="text" begin="14.572" end="15.140">じ</span></span></span><span tts:ruby="container"><span tts:ruby="base">分</span><span tts:ruby="textContainer"><span tts:ruby="text" begin="15.140" end="15.431">ぶ</span><span tts:ruby="text" begin="15.431" end="15.949">ん</span></span></span><span begin="15.949" end="16.178">の</span><span tts:ruby="container"><span tts:ruby="base">心</span><span tts:ruby="textContainer"><span tts:ruby="text" begin="16.178" end="16.744">こ</span><span tts:ruby="text" begin="16.744" end="17.082">こ</span><span tts:ruby="text" begin="17.082" end="17.562">ろ</span></span></span><span begin="17.562" end="17.862">だ</span><span begin="17.862" end="18.603">と</span></p></div></body></tt>';
+const parsedAmllFallback = parseTtml(amllRubyBugReportTtml);
+assert.strictEqual(parsedAmllFallback.length, 1);
+assert.strictEqual(parsedAmllFallback[0].text, '全ては自分の心だと');
+assert.strictEqual(parsedAmllFallback[0].words.length, 9);
+assert.strictEqual(parsedAmllFallback[0].words[0].text, '全');
+assert.strictEqual(parsedAmllFallback[0].words[0].ruby, 'すべ');
+assert.strictEqual(parsedAmllFallback[0].words[0].time, 12.748);
+assert.strictEqual(parsedAmllFallback[0].words[0].endTime, 13.762);
+assert.strictEqual(parsedAmllFallback[0].words[0].rubySegments.length, 2);
+assert.strictEqual(parsedAmllFallback[0].words[0].rubySegments[0].text, 'す');
+assert.strictEqual(parsedAmllFallback[0].words[0].rubySegments[0].time, 12.748);
+assert.strictEqual(parsedAmllFallback[0].words[0].rubySegments[0].endTime, 13.487);
+assert.strictEqual(parsedAmllFallback[0].words[0].rubySegments[1].text, 'べ');
+assert.strictEqual(parsedAmllFallback[0].words[0].rubySegments[1].time, 13.487);
+assert.strictEqual(parsedAmllFallback[0].words[0].rubySegments[1].endTime, 13.762);
+assert.strictEqual(parsedAmllFallback[0].words[3].text, '自');
+assert.strictEqual(parsedAmllFallback[0].words[3].time, 14.572);
+assert.strictEqual(parsedAmllFallback[0].words[3].endTime, 15.140);
+assert.strictEqual(parsedAmllFallback[0].words[4].text, '分');
+assert.strictEqual(parsedAmllFallback[0].words[4].time, 15.140);
+assert.strictEqual(parsedAmllFallback[0].words[4].endTime, 15.949);
+assert.strictEqual(parsedAmllFallback[0].words[6].text, '心');
+assert.strictEqual(parsedAmllFallback[0].words[6].ruby, 'こころ');
+assert.strictEqual(parsedAmllFallback[0].words[6].time, 16.178);
+assert.strictEqual(parsedAmllFallback[0].words[6].endTime, 17.562);
+assert.strictEqual(parsedAmllFallback[0].words[6].rubySegments.length, 3);
+
+// Also test DOMParser path with untimed tts:ruby="container" + tts:ruby="textContainer" + timed tts:ruby="text"
+global.DOMParser = class {
+    parseFromString(str) {
+        if (!str.includes('mock-dom-amll-textcontainer')) {
+            return { getElementsByTagName: () => [] };
+        }
+        const c1 = makeMockDomElement('span', { 'tts:ruby': 'container' }, [
+            makeMockDomElement('span', { 'tts:ruby': 'base' }, [makeMockTextNode('全')]),
+            makeMockDomElement('span', { 'tts:ruby': 'textContainer' }, [
+                makeMockDomElement('span', { 'tts:ruby': 'text', begin: '12.748', end: '13.487' }, [makeMockTextNode('す')]),
+                makeMockDomElement('span', { 'tts:ruby': 'text', begin: '13.487', end: '13.762' }, [makeMockTextNode('べ')])
+            ])
+        ]);
+        const sTe = makeMockDomElement('span', { begin: '13.762', end: '14.311' }, [makeMockTextNode('て')]);
+        const cKokoro = makeMockDomElement('span', { 'tts:ruby': 'container' }, [
+            makeMockDomElement('span', { 'tts:ruby': 'base' }, [makeMockTextNode('心')]),
+            makeMockDomElement('span', { 'tts:ruby': 'textContainer' }, [
+                makeMockDomElement('span', { 'tts:ruby': 'text', begin: '16.178', end: '16.744' }, [makeMockTextNode('こ')]),
+                makeMockDomElement('span', { 'tts:ruby': 'text', begin: '16.744', end: '17.082' }, [makeMockTextNode('こ')]),
+                makeMockDomElement('span', { 'tts:ruby': 'text', begin: '17.082', end: '17.562' }, [makeMockTextNode('ろ')])
+            ])
+        ]);
+        const pEl = makeMockDomElement('p', { begin: '12.748', end: '18.603' }, [c1, sTe, cKokoro]);
+        return {
+            getElementsByTagName(tag) {
+                if (tag === 'p') return [pEl];
+                if (tag === 'parsererror') return [];
+                return [];
+            }
+        };
+    }
+};
+const domParsedAmll = parseTtml('<tt id="mock-dom-amll-textcontainer"></tt>');
+assert.strictEqual(domParsedAmll.length, 1);
+assert.strictEqual(domParsedAmll[0].words.length, 3);
+assert.strictEqual(domParsedAmll[0].words[0].text, '全');
+assert.strictEqual(domParsedAmll[0].words[0].ruby, 'すべ');
+assert.strictEqual(domParsedAmll[0].words[0].time, 12.748);
+assert.strictEqual(domParsedAmll[0].words[0].endTime, 13.762);
+assert.strictEqual(domParsedAmll[0].words[0].rubySegments.length, 2);
+assert.strictEqual(domParsedAmll[0].words[2].text, '心');
+assert.strictEqual(domParsedAmll[0].words[2].ruby, 'こころ');
+assert.strictEqual(domParsedAmll[0].words[2].time, 16.178);
+assert.strictEqual(domParsedAmll[0].words[2].endTime, 17.562);
+assert.strictEqual(domParsedAmll[0].words[2].rubySegments.length, 3);
+
+// Also test with real JSDOM XML DOMParser against the full bug report TTML
+const { JSDOM } = require('jsdom');
+global.DOMParser = new JSDOM().window.DOMParser;
+const jsdomParsedAmll = parseTtml(amllRubyBugReportTtml);
+assert.strictEqual(jsdomParsedAmll.length, 1);
+assert.strictEqual(jsdomParsedAmll[0].text, '全ては自分の心だと');
+assert.strictEqual(jsdomParsedAmll[0].words.length, 9);
+assert.deepStrictEqual(
+    jsdomParsedAmll[0].words.map(w => ({ text: w.text, ruby: w.ruby, time: w.time, endTime: w.endTime })),
+    [
+        { text: '全', ruby: 'すべ', time: 12.748, endTime: 13.762 },
+        { text: 'て', ruby: '', time: 13.762, endTime: 14.311 },
+        { text: 'は', ruby: '', time: 14.311, endTime: 14.572 },
+        { text: '自', ruby: 'じ', time: 14.572, endTime: 15.140 },
+        { text: '分', ruby: 'ぶん', time: 15.140, endTime: 15.949 },
+        { text: 'の', ruby: '', time: 15.949, endTime: 16.178 },
+        { text: '心', ruby: 'こころ', time: 16.178, endTime: 17.562 },
+        { text: 'だ', ruby: '', time: 17.562, endTime: 17.862 },
+        { text: 'と', ruby: '', time: 17.862, endTime: 18.603 }
+    ]
+);
+
 console.log('Testing ThumbnailGenerator...');
 assert(typeof ThumbnailGenerator === 'object', 'ThumbnailGenerator exists');
 const sampleLyricsForThumb = [

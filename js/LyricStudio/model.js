@@ -132,7 +132,14 @@
                 rubyVal = segs.map(s => s.ruby || '').filter(Boolean).join('');
             }
         }
-        return {
+        const rubySegments = Array.isArray(partial.rubySegments) && partial.rubySegments.length > 0
+            ? partial.rubySegments.map(rs => ({
+                text: String(rs.text || ''),
+                time: (typeof rs.time === 'number' && !isNaN(rs.time)) ? rs.time : null,
+                endTime: (typeof rs.endTime === 'number' && !isNaN(rs.endTime)) ? rs.endTime : null
+            }))
+            : undefined;
+        const wordObj = {
             id: partial.id || nextUid('w'),
             text: textVal,
             ruby: rubyVal,
@@ -143,6 +150,10 @@
             isBacking: isBg,
             isBG: isBg
         };
+        if (rubySegments) {
+            wordObj.rubySegments = rubySegments;
+        }
+        return wordObj;
     }
 
     function tokenizeIntoWords(text, lineTime = null, lineEndTime = null, isBacking = false, assignTimings = false) {
@@ -918,7 +929,7 @@
                 const we = (typeof w.endTime === 'number' && !isNaN(w.endTime) && w.endTime > wt)
                     ? w.endTime
                     : (typeof w.end === 'number' && !isNaN(w.end) && w.end > wt ? w.end : Number((wt + step).toFixed(3)));
-                return {
+                const rw = {
                     text: w.text,
                     ruby: w.ruby || '',
                     time: wt,
@@ -928,6 +939,10 @@
                     isBacking: Boolean(w.isBG || w.isBacking || norm.isBG || norm.isBacking),
                     isBG: Boolean(w.isBG || w.isBacking || norm.isBG || norm.isBacking)
                 };
+                if (Array.isArray(w.rubySegments) && w.rubySegments.length > 0) {
+                    rw.rubySegments = w.rubySegments.map(rs => ({ ...rs }));
+                }
+                return rw;
             });
 
             return {

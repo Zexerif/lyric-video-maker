@@ -574,26 +574,29 @@ function drawFrame(currentTime) {
     // Draw Lyrics Setup
     ctx.textAlign = currentLyricAlignment;
     ctx.textBaseline = 'middle';
-    
-    let lyricX = 850; 
+
+    let lyricX = 850;
     let layoutWidth = renderW - 850;
     if (!albumImage && currentBgStyle !== 'albumBlur' && currentBgStyle !== 'materialYou') {
         layoutWidth = renderW - 100;
         lyricX = 50;
     }
-    
+
     if (currentLyricAlignment === 'center') {
         lyricX = lyricX + layoutWidth / 2;
     } else if (currentLyricAlignment === 'right') {
         lyricX = lyricX + layoutWidth - 50;
     }
-    
+
     const centerY = renderH / 2 + currentVerticalOffset;
 
     function getWrappedLines(context, lyric, maxWidth, font) {
         const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
         const rubySignature = Array.isArray(lyric.words)
-            ? lyric.words.map(w => `${w.text || ''}:${w.ruby || ''}`).join('|')
+            ? lyric.words.map(w => {
+                const segSig = Array.isArray(w.rubySegments) ? w.rubySegments.map(s => `${s.text}:${s.time}-${s.endTime}`).join(',') : '';
+                return `${w.text || ''}:${w.ruby || ''}:${w.time || 0}-${w.endTime || 0}:${segSig}`;
+            }).join('|')
             : (lyric.text || '');
         if (lyric.cachedLines &&
             lyric.cachedFont === font &&
@@ -618,6 +621,7 @@ function drawFrame(currentTime) {
                     items.push({
                         text: rawText,
                         ruby: wRuby,
+                        rubySegments: Array.isArray(w.rubySegments) && w.rubySegments.length > 0 ? w.rubySegments : null,
                         time: w.time,
                         endTime: w.endTime,
                         isBacking: w.isBacking
@@ -763,9 +767,18 @@ function drawFrame(currentTime) {
                 const cleanWidth = text.length > 0 ? context.measureText(text).width : 0;
                 const rubyText = item.ruby ? String(item.ruby).trim() : '';
                 let rubyWidth = 0;
+                let measuredRubySegments = null;
                 if (rubyText) {
                     context.font = rubyFont;
                     rubyWidth = context.measureText(rubyText).width;
+                    if (Array.isArray(item.rubySegments) && item.rubySegments.length > 0) {
+                        measuredRubySegments = item.rubySegments.map(seg => ({
+                            text: seg.text || '',
+                            width: context.measureText(seg.text || '').width,
+                            time: seg.time,
+                            endTime: seg.endTime
+                        }));
+                    }
                     context.font = activeFont;
                 }
 
@@ -777,6 +790,7 @@ function drawFrame(currentTime) {
                 item.renderText = text;
                 item.rubyText = rubyText;
                 item.rubyWidth = rubyWidth;
+                item.measuredRubySegments = measuredRubySegments;
                 item.rubyFont = rubyFont;
                 item.rubyFontPx = rubyFontPx;
                 item.leadingSpaces = leadingSpaces;
@@ -1035,63 +1049,172 @@ function drawFrame(currentTime) {
                 context.shadowBlur = 0;
                 renderLineItemsWithRuby(context, line, drawItem, startX, lineY);
 
-                // Calculate active highlighted width
-                let activeWidth = 0;
-                let hasActive = false;
-                let lastItemProgress = 0;
-
-                for (let j = 0; j < line.items.length; j++) {
-                    const item = line.items[j];
-                    const spaceWidth = context.measureText(' ').width;
-                    activeWidth += item.leadingSpaces * spaceWidth;
-
-                    let progress = 0;
-                    if (lyric.words && lyric.words.length > 0) {
-                        const duration = item.endTime - item.time;
-                        if (currentTime >= item.endTime || duration <= 0) {
-                            progress = 1;
-                        } else if (currentTime > item.time) {
-                            progress = (currentTime - item.time) / duration;
-                        }
-                    } else {
-                        progress = 1; // LRC active line fully highlights at once
-                    }
-
-                    if (progress > 0) {
-                        hasActive = true;
-                        activeWidth += item.cleanWidth * progress;
-                    }
-
-                    lastItemProgress = progress;
-
-                    if (progress < 1) {
-                        break;
-                    }
-
-                    activeWidth += item.trailingSpaces * spaceWidth;
-                }
-
-                if (hasActive) {
-                    context.save();
+                if (line.hasRuby) {
+                    const hasWordTimings = Boolean(lyric.words && lyric.words.length > 0);
                     const blurRadius = (isStyledBacking ? 8 : 20) * opacity;
-
-                    // If the line is not fully active, apply clipping to the active sweep width
-                    const isFullyActive = (lastItemProgress >= 1);
-                    if (!isFullyActive) {
-                        context.beginPath();
-                        context.rect(startX - blurRadius * 2, lineY - drawItem.lineHeight * 1.25, activeWidth + blurRadius * 2, drawItem.lineHeight * 2.5);
-                        context.clip();
-                    }
-
+                    context.save();
                     context.font = drawItem.font;
+                    const spaceWidth = context.measureText(' ').width;
+                    const prevAlign = context.textAlign;
+                    const prevBaseline = context.textBaseline;
+                    context.textBaseline = 'middle';
                     context.fillStyle = currentLyricColor;
                     if (isStyledBacking) {
                         context.globalAlpha = 0.6;
                     }
                     context.shadowColor = activeGlowColor;
                     context.shadowBlur = blurRadius;
-                    renderLineItemsWithRuby(context, line, drawItem, startX, lineY);
+
+                    let cursorX = startX;
+                    const rubyY = lineY - Math.round(drawItem.baseFontPx * 0.68);
+
+                    for (let j = 0; j < line.items.length; j++) {
+                        const it = line.items[j];
+                        cursorX += it.leadingSpaces * spaceWidth;
+                        const slotWidth = it.cleanWidth;
+                        const baseWidth = it.baseCleanWidth !== undefined ? it.baseCleanWidth : slotWidth;
+                        const baseDrawX = cursorX + (slotWidth - baseWidth) / 2;
+
+                        let baseProgress = 0;
+                        let rubyActiveWidth = 0;
+                        if (hasWordTimings) {
+                            if (Array.isArray(it.measuredRubySegments) && it.measuredRubySegments.length > 0 && it.rubyWidth > 0) {
+                                let segActiveW = 0;
+                                let totalSegW = 0;
+                                for (let s = 0; s < it.measuredRubySegments.length; s++) {
+                                    const seg = it.measuredRubySegments[s];
+                                    const sw = seg.width || 0;
+                                    totalSegW += sw;
+                                    const sStart = typeof seg.time === 'number' ? seg.time : it.time;
+                                    const sEnd = (typeof seg.endTime === 'number' && seg.endTime > sStart) ? seg.endTime : it.endTime;
+                                    const sDur = sEnd - sStart;
+                                    let sp = 0;
+                                    if (currentTime >= sEnd || sDur <= 0) {
+                                        sp = 1;
+                                    } else if (currentTime > sStart) {
+                                        sp = (currentTime - sStart) / sDur;
+                                    }
+                                    segActiveW += sw * sp;
+                                }
+                                baseProgress = totalSegW > 0 ? Math.max(0, Math.min(1, segActiveW / totalSegW)) : 0;
+                                rubyActiveWidth = it.rubyWidth * baseProgress;
+                            } else {
+                                const duration = it.endTime - it.time;
+                                if (currentTime >= it.endTime || duration <= 0) {
+                                    baseProgress = 1;
+                                } else if (currentTime > it.time) {
+                                    baseProgress = (currentTime - it.time) / duration;
+                                }
+                                rubyActiveWidth = (it.rubyWidth || 0) * baseProgress;
+                            }
+                        } else {
+                            baseProgress = 1;
+                            rubyActiveWidth = it.rubyWidth || 0;
+                        }
+
+                        if (baseProgress > 0) {
+                            if (it.renderText) {
+                                if (baseProgress >= 1) {
+                                    context.font = drawItem.font;
+                                    context.textAlign = 'left';
+                                    context.fillText(it.renderText, baseDrawX, lineY);
+                                } else {
+                                    context.save();
+                                    context.beginPath();
+                                    context.rect(baseDrawX - blurRadius * 2, lineY - drawItem.baseFontPx, baseWidth * baseProgress + blurRadius * 2, drawItem.baseFontPx * 2);
+                                    context.clip();
+                                    context.font = drawItem.font;
+                                    context.textAlign = 'left';
+                                    context.fillText(it.renderText, baseDrawX, lineY);
+                                    context.restore();
+                                }
+                            }
+                            if (it.rubyText) {
+                                const rFont = it.rubyFont || `600 ${Math.round(drawItem.baseFontPx * 0.44)}px "${currentFont}", sans-serif`;
+                                const rFontPx = it.rubyFontPx || Math.round(drawItem.baseFontPx * 0.44);
+                                const rubyDrawX = cursorX + (slotWidth - it.rubyWidth) / 2;
+                                if (baseProgress >= 1) {
+                                    context.font = rFont;
+                                    context.textAlign = 'center';
+                                    context.fillText(it.rubyText, cursorX + slotWidth / 2, rubyY);
+                                } else {
+                                    context.save();
+                                    context.beginPath();
+                                    context.rect(rubyDrawX - blurRadius * 2, rubyY - rFontPx, rubyActiveWidth + blurRadius * 2, rFontPx * 2);
+                                    context.clip();
+                                    context.font = rFont;
+                                    context.textAlign = 'center';
+                                    context.fillText(it.rubyText, cursorX + slotWidth / 2, rubyY);
+                                    context.restore();
+                                }
+                            }
+                        }
+
+                        cursorX += slotWidth + it.trailingSpaces * spaceWidth;
+                    }
+
+                    context.textAlign = prevAlign;
+                    context.textBaseline = prevBaseline;
                     context.restore();
+                } else {
+                    // Calculate active highlighted width
+                    let activeWidth = 0;
+                    let hasActive = false;
+                    let lastItemProgress = 0;
+
+                    for (let j = 0; j < line.items.length; j++) {
+                        const item = line.items[j];
+                        const spaceWidth = context.measureText(' ').width;
+                        activeWidth += item.leadingSpaces * spaceWidth;
+
+                        let progress = 0;
+                        if (lyric.words && lyric.words.length > 0) {
+                            const duration = item.endTime - item.time;
+                            if (currentTime >= item.endTime || duration <= 0) {
+                                progress = 1;
+                            } else if (currentTime > item.time) {
+                                progress = (currentTime - item.time) / duration;
+                            }
+                        } else {
+                            progress = 1; // LRC active line fully highlights at once
+                        }
+
+                        if (progress > 0) {
+                            hasActive = true;
+                            activeWidth += item.cleanWidth * progress;
+                        }
+
+                        lastItemProgress = progress;
+
+                        if (progress < 1) {
+                            break;
+                        }
+
+                        activeWidth += item.trailingSpaces * spaceWidth;
+                    }
+
+                    if (hasActive) {
+                        context.save();
+                        const blurRadius = (isStyledBacking ? 8 : 20) * opacity;
+
+                        // If the line is not fully active, apply clipping to the active sweep width
+                        const isFullyActive = (lastItemProgress >= 1);
+                        if (!isFullyActive) {
+                            context.beginPath();
+                            context.rect(startX - blurRadius * 2, lineY - drawItem.lineHeight * 1.25, activeWidth + blurRadius * 2, drawItem.lineHeight * 2.5);
+                            context.clip();
+                        }
+
+                        context.font = drawItem.font;
+                        context.fillStyle = currentLyricColor;
+                        if (isStyledBacking) {
+                            context.globalAlpha = 0.6;
+                        }
+                        context.shadowColor = activeGlowColor;
+                        context.shadowBlur = blurRadius;
+                        renderLineItemsWithRuby(context, line, drawItem, startX, lineY);
+                        context.restore();
+                    }
                 }
             } else {
                 // Normal inactive line
@@ -1175,7 +1298,7 @@ function drawFrame(currentTime) {
         const lyric = lyrics[i];
         const distance = i - smoothedIndex;
         const absDistance = Math.abs(distance);
-        
+
         // Apply Transition Effects
         let opacity = Math.max(0, 1 - absDistance * 0.25);
         let scale = 1;
