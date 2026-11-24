@@ -67,6 +67,10 @@ function resetInputs() {
     fontSizeValue.textContent = '60px';
     lineSpacingSlider.value = 1.3;
     lineSpacingValue.textContent = '1.3x';
+    if (furiganaSizeSlider) furiganaSizeSlider.value = 0.44;
+    if (furiganaSizeValue) furiganaSizeValue.textContent = '44%';
+    if (furiganaSpacingSlider) furiganaSpacingSlider.value = 0.68;
+    if (furiganaSpacingValue) furiganaSpacingValue.textContent = '0.68x';
     verticalOffsetSlider.value = 0;
     verticalOffsetValue.textContent = '0px';
     lyricTransitionSelect.value = 'slide';
@@ -167,6 +171,22 @@ lineSpacingSlider.addEventListener('input', (e) => {
     drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
 });
 
+if (furiganaSizeSlider) {
+    furiganaSizeSlider.addEventListener('input', (e) => {
+        currentFuriganaScale = parseFloat(e.target.value);
+        if (furiganaSizeValue) furiganaSizeValue.textContent = `${Math.round(currentFuriganaScale * 100)}%`;
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+}
+
+if (furiganaSpacingSlider) {
+    furiganaSpacingSlider.addEventListener('input', (e) => {
+        currentFuriganaSpacing = parseFloat(e.target.value);
+        if (furiganaSpacingValue) furiganaSpacingValue.textContent = `${currentFuriganaSpacing.toFixed(2)}x`;
+        drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);
+    });
+}
+
 verticalOffsetSlider.addEventListener('input', (e) => {
     currentVerticalOffset = parseInt(e.target.value);
     verticalOffsetValue.textContent = `${currentVerticalOffset}px`;
@@ -229,6 +249,8 @@ if (resetStyleBtn) {
         currentFontSize = 60;
         currentLineSpacing = 1.3;
         currentVerticalOffset = 0;
+        currentFuriganaScale = 0.44;
+        currentFuriganaSpacing = 0.68;
 
         // Reset only advanced style UI control values
         fontSizeSlider.value = 60;
@@ -237,6 +259,10 @@ if (resetStyleBtn) {
         lineSpacingValue.textContent = '1.3x';
         verticalOffsetSlider.value = 0;
         verticalOffsetValue.textContent = '0px';
+        if (furiganaSizeSlider) furiganaSizeSlider.value = 0.44;
+        if (furiganaSizeValue) furiganaSizeValue.textContent = '44%';
+        if (furiganaSpacingSlider) furiganaSpacingSlider.value = 0.68;
+        if (furiganaSpacingValue) furiganaSpacingValue.textContent = '0.68x';
 
         // Trigger redraw canvas and save progress
         drawFrame(isPlaying || isRecording ? audioContext.currentTime - startTime + pausedTime : 0);

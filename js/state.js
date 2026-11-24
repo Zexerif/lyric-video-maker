@@ -31,6 +31,8 @@ let currentLyricTransition = 'slide';
 let currentAudioReactive = 'none'; // 'none', 'spectrum', 'pulseArtwork', 'ambientBreathe'
 let currentDualLanguage = 'auto'; // 'auto', 'hide'
 let currentSubLyricScale = 0.65;
+let currentFuriganaScale = 0.44;
+let currentFuriganaSpacing = 0.68;
 
 // Audio analyser state for reactive visuals
 let audioAnalyser = null;

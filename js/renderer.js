@@ -344,7 +344,7 @@ function drawFrame(currentTime) {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.shadowColor = 'rgba(0,0,0,0.8)';
     ctx.shadowBlur = 10;
-    ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v2.1.1`, 40, 40);
+    ctx.fillText(`zexerif.github.io/lyric-video-maker/    :    v2.1.2`, 40, 40);
     ctx.restore();
 
     // Draw Custom Credits (multiple rows flowing down from the artist)
@@ -592,12 +592,13 @@ function drawFrame(currentTime) {
 
     function getWrappedLines(context, lyric, maxWidth, font) {
         const backingVocalsMode = backingVocalsSelect ? backingVocalsSelect.value : 'styled';
-        const rubySignature = Array.isArray(lyric.words)
+        const furiganaScale = typeof currentFuriganaScale === 'number' ? currentFuriganaScale : 0.44;
+        const rubySignature = `${furiganaScale}|` + (Array.isArray(lyric.words)
             ? lyric.words.map(w => {
                 const segSig = Array.isArray(w.rubySegments) ? w.rubySegments.map(s => `${s.text}:${s.time}-${s.endTime}`).join(',') : '';
                 return `${w.text || ''}:${w.ruby || ''}:${w.time || 0}-${w.endTime || 0}:${segSig}`;
             }).join('|')
-            : (lyric.text || '');
+            : (lyric.text || ''));
         if (lyric.cachedLines &&
             lyric.cachedFont === font &&
             lyric.cachedMaxWidth === maxWidth &&
@@ -743,7 +744,7 @@ function drawFrame(currentTime) {
             const lines = [];
             let currentLine = [];
             let currentLineWidth = 0;
-            const rubyFontPx = Math.max(12, Math.round(baseFontPx * 0.44));
+            const rubyFontPx = Math.max(10, Math.round(baseFontPx * furiganaScale));
             const rubyFont = `600 ${rubyFontPx}px "${currentFont}", sans-serif`;
 
             for (let n = 0; n < itemsList.length; n++) {
@@ -887,9 +888,10 @@ function drawFrame(currentTime) {
         const subLineHeight = Math.round(subFontSize * currentLineSpacing);
         const gapBetween = (mainLines.length > 0 && backingLines.length > 0) ? 15 : 0;
 
+        const furiganaSpacing = typeof currentFuriganaSpacing === 'number' ? currentFuriganaSpacing : 0.68;
         const linesToDraw = [];
         for (let i = 0; i < mainLines.length; i++) {
-            const rubyExtra = mainLines[i].hasRuby ? Math.round(currentFontSize * 0.36) : 0;
+            const rubyExtra = mainLines[i].hasRuby ? Math.max(0, Math.round(currentFontSize * (furiganaSpacing - 0.32))) : 0;
             linesToDraw.push({
                 line: mainLines[i],
                 font: defaultFont,
@@ -913,7 +915,7 @@ function drawFrame(currentTime) {
         }
         for (let i = 0; i < backingLines.length; i++) {
             const bFontPx = useBackingStyle ? backingFontSize : currentFontSize;
-            const rubyExtra = backingLines[i].hasRuby ? Math.round(bFontPx * 0.36) : 0;
+            const rubyExtra = backingLines[i].hasRuby ? Math.max(0, Math.round(bFontPx * (furiganaSpacing - 0.32))) : 0;
             linesToDraw.push({
                 line: backingLines[i],
                 font: useBackingStyle ? backingFont : defaultFont,
@@ -957,7 +959,7 @@ function drawFrame(currentTime) {
             const prevBaseline = ctxRef.textBaseline;
             ctxRef.textBaseline = 'middle';
             let cursorX = startXPos;
-            const rubyY = baseLineY - Math.round(drawItemObj.baseFontPx * 0.68);
+            const rubyY = baseLineY - Math.round(drawItemObj.baseFontPx * furiganaSpacing);
 
             for (let j = 0; j < lineObj.items.length; j++) {
                 const it = lineObj.items[j];
@@ -1066,7 +1068,7 @@ function drawFrame(currentTime) {
                     context.shadowBlur = blurRadius;
 
                     let cursorX = startX;
-                    const rubyY = lineY - Math.round(drawItem.baseFontPx * 0.68);
+                    const rubyY = lineY - Math.round(drawItem.baseFontPx * furiganaSpacing);
 
                     for (let j = 0; j < line.items.length; j++) {
                         const it = line.items[j];

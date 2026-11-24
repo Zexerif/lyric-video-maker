@@ -1,4 +1,4 @@
-# 🎵 Lyric Video Maker (v2.1.1)
+# 🎵 Lyric Video Maker (v2.1.2)
 
 > Create gorgeous synced lyric videos from your audio and lyrics files directly in your browser.
 
